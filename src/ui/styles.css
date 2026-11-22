@@ -1361,3 +1361,22 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .unit-stand .unit-sprite { background: none; border: none; border-radius: 0; box-shadow: none; }
 .ks-sound { position: absolute; top: 16px; right: 140px; z-index: 2; background: rgba(0, 0, 0, 0.5); }
 .ks-credit { position: absolute; right: 12px; bottom: 6px; font-size: 0.62rem; color: rgba(255, 255, 255, 0.45); pointer-events: none; }
+/* 立ち絵は画像のまわりに余白があるので、マスより大きめに出す（敵は奥にいて小さく見えるぶん、さらに大きく） */
+.unit-stand .unit-sprite.unit-player { width: 205%; margin-bottom: -18%; }
+.unit-stand .unit-sprite.unit-enemy { width: 240%; margin-bottom: -22%; }
+/* 横にはみ出す大きさなので、真ん中を基準に絶対配置で置く（flex のはみ出しだと片側が切れる） */
+.unit-stand .unit-sprite { position: absolute; left: 50%; bottom: 0; translate: -50% 0; margin: 0; }
+.unit-stand .unit-sprite.unit-player { width: 205%; bottom: -14%; }
+.unit-stand .unit-sprite.unit-enemy { width: 240%; bottom: -16%; }
+/* 床から少し浮かせる（近すぎると、となりのマスの裏に隠れて切れて見える） */
+.unit-stand { transform: translateZ(12px) rotateX(calc(var(--tilt) * -1)); }
+/* 画像の下端を床より下に出さない（床とぶつかると、3D の重なり順が崩れて画像が切れる） */
+.unit-stand .unit-sprite.unit-player, .unit-stand .unit-sprite.unit-enemy { bottom: 0; }
+/* 立ち絵には filter を使わない（3D の中で絵の片側が切れるため）。光・障壁・凍結は重ねる部品で出す */
+.unit-stand .unit-sprite, .unit-stand .unit-sprite.unit-player, .unit-stand .unit-sprite.unit-enemy { filter: none; }
+.sprite-aura { position: absolute; left: 50%; bottom: 0; width: 150%; height: 120%; translate: -50% 0; border-radius: 50% 50% 45% 45%; pointer-events: none; }
+.aura-player { background: radial-gradient(ellipse at 50% 70%, rgba(79, 227, 255, 0.35), transparent 65%); }
+.aura-enemy { background: radial-gradient(ellipse at 50% 70%, rgba(255, 77, 109, 0.35), transparent 65%); animation: hover3d 1.4s ease-in-out infinite alternate; }
+.sprite-aura.shielded { background: radial-gradient(ellipse at 50% 60%, transparent 45%, rgba(120, 240, 255, 0.8) 60%, transparent 72%); }
+.sprite-aura.warded { box-shadow: inset 0 0 0 2px var(--gold); }
+.sprite-ice { position: absolute; left: 50%; bottom: 0; width: 160%; height: 130%; translate: -50% 0; border-radius: 30% 30% 20% 20%; pointer-events: none; background: linear-gradient(160deg, rgba(230, 250, 255, 0.65), rgba(127, 216, 255, 0.4) 50%, rgba(200, 240, 255, 0.6)); border: 2px solid rgba(230, 250, 255, 0.9); }

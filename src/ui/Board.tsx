@@ -62,13 +62,18 @@ export function Board({ s, side, sprite }: { s: BattleState; side: Side; sprite?
                 // 立ち絵（盤面を傾けても、キャラだけはカメラの方を向いて立つ）
                 <div className="unit-stand">
                   {sprite && !brokenSprites.has(sprite) ? (
-                    <img
-                      className={`unit-sprite unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}
-                      src={`${UNIT_BASE}${sprite}.png`}
-                      alt=""
-                      draggable={false}
-                      onError={() => brokenSprites.add(sprite)}
-                    />
+                    <>
+                      {/* 立ち絵に filter を付けると 3D の中で絵が切れるので、光や氷は別の部品を重ねて出す */}
+                      <span className={`sprite-aura aura-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''}`} />
+                      <img
+                        className={`unit-sprite unit-${side}`}
+                        src={`${UNIT_BASE}${sprite}.png`}
+                        alt=""
+                        draggable={false}
+                        onError={() => brokenSprites.add(sprite)}
+                      />
+                      {s.isFrozen(side) && <span className="sprite-ice" />}
+                    </>
                   ) : (
                     <div className={`unit unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}>
                       {side === 'player' ? '◆' : '✶'}
