@@ -20,19 +20,30 @@ export interface StoryPage {
 
 export interface StoryScene {
   id: string;
-  /** このステージの戦闘の前に流す */
-  before?: number;
-  /** このステージに勝ったあとに流す */
-  afterWin?: number;
   pages: StoryPage[];
+}
+
+/** すごろくの1マス = 1チャプター。紙芝居（前）→ 戦闘 → 紙芝居（後） */
+export interface Chapter {
+  id: string;
+  /** マスに出す番号と名前 */
+  no: number;
+  title: string;
+  /** 戦闘の強さ（ステージ番号と同じ強さになる。5の倍数は強敵） */
+  stage: number;
+  enemy: string;
+  /** マスの絵（public/story/ の下、拡張子なし） */
+  thumb?: string;
+  /** 戦闘の前に流す紙芝居 */
+  before: StoryPage[];
+  /** 勝ったあとに流す紙芝居 */
+  after: StoryPage[];
 }
 
 export interface Episode {
   id: string;
   title: string;
   subtitle: string;
-  stages: number[];
-  /** ステージごとの敵の名前 */
-  enemies: Record<number, string>;
-  scenes: StoryScene[];
+  prologue: StoryScene;
+  chapters: Chapter[];
 }

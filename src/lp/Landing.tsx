@@ -57,6 +57,21 @@ export function Landing() {
         <img src="lp/screen.png" alt="戦闘画面。左に魔法陣と体力、まんなかに3Dの盤面、唱えた呪文「メテオ」が大きく出ている" loading="lazy" />
       </section>
 
+      <section className="lp-sec lp-story">
+        <h2>ストーリー　第1話「812年寝坊した詠唱者」</h2>
+        <div className="lp-story-row">
+          <img src="story/ep1/01-pod.jpg" alt="壊れたカプセルの中で目覚める、白くて丸いうさぎのようなヤニかわ" loading="lazy" />
+          <p>
+            「納期が過ぎるまで寝かせてください」――そう言ってコールドスリープに入ったエンジニア、<b>ヤニかわ</b>。
+            目が覚めると、812年が過ぎていた。<br />
+            中二病全開の管理術式に「最後の詠唱者」と呼ばれ、言葉が魔法になる世界で、地下から地上を目指す。
+            まずはタバコに火をつけたいだけなのに。
+          </p>
+        </div>
+        <img className="lp-story-wide" src="story/ep1/07-surface.jpg" alt="折れた東京タワーと巨大な水晶、宙に浮かぶ岩が広がる、異世界のような未来の東京" loading="lazy" />
+        <p className="lp-sub">紙芝居でストーリーを読み、すごろくのマップでチャプターを進めながら戦う。</p>
+      </section>
+
       <section className="lp-sec">
         <h2>遊び方</h2>
         <ol className="lp-steps">

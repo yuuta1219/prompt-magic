@@ -110,3 +110,10 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .lp-circle * { animation: none !important; }
 }
+
+.lp-story-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: center; }
+.lp-story-row img, .lp-story-wide { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); display: block; }
+.lp-story-row p { margin: 0; font-size: 1.02rem; }
+.lp-story-row b { color: var(--gold); }
+.lp-story-wide { margin-top: 18px; }
+@media (max-width: 700px) { .lp-story-row { grid-template-columns: 1fr; } }

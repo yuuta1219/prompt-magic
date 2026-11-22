@@ -1,28 +1,32 @@
-/** ストーリーモード: どのステージの前後に、どの紙芝居を流すか */
+/** ストーリーモード: 話・チャプターの一覧と、どこまで進めるか */
 import { EPISODE1 } from './episode1';
-import type { Episode, StoryScene } from './types';
+import type { Chapter, Episode, StoryPage, StoryScene } from './types';
 
 export const EPISODES: Episode[] = [EPISODE1];
+export const ALL_CHAPTERS: Chapter[] = EPISODES.flatMap((e) => e.chapters);
 
-const ALL_SCENES = EPISODES.flatMap((e) => e.scenes);
+/** 進み具合に残す「済み」の印 */
+export const PROLOGUE_DONE = (e: Episode) => e.prologue.id;
+export const CHAPTER_CLEAR = (c: Chapter) => c.id;
 
-/** ステージの戦闘前に流す、まだ見ていない場面 */
-export function sceneBefore(stage: number, seen: readonly string[]): StoryScene | null {
-  return ALL_SCENES.find((s) => s.before === stage && !seen.includes(s.id)) ?? null;
+/** チャプターを選べるか（前のチャプターをクリアしていれば選べる。最初のチャプターはプロローグを見ていれば） */
+export function chapterOpen(e: Episode, idx: number, done: readonly string[]): boolean {
+  if (idx === 0) return done.includes(e.prologue.id);
+  return done.includes(e.chapters[idx - 1].id);
 }
 
-/** ステージに勝ったあとに流す、まだ見ていない場面 */
-export function sceneAfterWin(stage: number, seen: readonly string[]): StoryScene | null {
-  return ALL_SCENES.find((s) => s.afterWin === stage && !seen.includes(s.id)) ?? null;
+export function episodeCleared(e: Episode, done: readonly string[]): boolean {
+  return e.chapters.every((c) => done.includes(c.id));
 }
 
-/** ストーリー中のステージなら、その敵の名前 */
-export function storyEnemyName(stage: number): string | null {
-  for (const e of EPISODES) if (e.enemies[stage]) return e.enemies[stage];
-  return null;
+/** チャプターの頭に出すタイトルのページ */
+function chapterTitle(c: Chapter): StoryPage {
+  return { tone: 'black', title: true, lines: [{ text: `チャプター${c.no}　${c.title}` }] };
 }
 
-/** 見直し用: 話の場面を全部つなげて1本にする */
-export function wholeEpisode(e: Episode): StoryScene {
-  return { id: `${e.id}-replay`, pages: e.scenes.flatMap((s) => s.pages) };
+export function chapterBefore(c: Chapter): StoryScene {
+  return { id: `${c.id}-before`, pages: [chapterTitle(c), ...c.before] };
+}
+export function chapterAfter(c: Chapter): StoryScene | null {
+  return c.after.length ? { id: `${c.id}-after`, pages: c.after } : null;
 }

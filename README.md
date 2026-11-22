@@ -6,6 +6,16 @@
 
 ---
 
+## ストーリーモード（紙芝居）
+
+ゲームを始めると、ステージの戦闘の前と、勝ったあとに紙芝居が流れる（見た場面は二度と自動では流れない。ヘッダーの「📜 ストーリー」で見直せる）。
+
+- 台本: `src/story/episode1.ts`（第1話「812年寝坊した詠唱者」、ステージ1〜5）。ページごとに絵・色合い・演出・セリフを書く
+- 流すタイミング: `src/story/index.ts`（`before: ステージ` / `afterWin: ステージ`）
+- 絵: `public/story/ep1/*.jpg`。無い絵は色と演出だけで進む。元の PNG と生成の発注書は `art/ep1/`（git で追跡しない）
+- 主役は「ヤニかわ」。中二病なのは管理術式オラクルと敵のほうで、ヤニかわは眠そうに軽い敬語でツッコむ
+
+
 ## 起動方法
 
 必要なもの: Node.js 22 以上
@@ -13,8 +23,10 @@
 ```bash
 cd prompt-magic
 npm install
-npm run dev        # → http://localhost:5173
+npm run dev        # → http://localhost:5173（紹介ページ）／ http://localhost:5173/play/（ゲーム）
 ```
+
+ページは2つ。ルート `/` が紹介ページ（`index.html` → `src/lp/`）、`/play/` がゲーム本体（`play/index.html` → `src/main.tsx`）。
 
 本番ビルド:
 

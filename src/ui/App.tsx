@@ -6,10 +6,7 @@ import { Board } from './Board';
 import { ElementGuide } from './ElementGuide';
 import { SkillTree } from './SkillTree';
 import { AfterOverlay, ChargeOverlay, ImpactOverlay, chargingUltimate, shakeClass, useImpact } from './Cinematic';
-import { Kamishibai } from '../story/Kamishibai';
-import { EPISODES, sceneAfterWin, sceneBefore, storyEnemyName, wholeEpisode } from '../story';
-import type { StoryScene } from '../story/types';
-import { markStorySeen, applyDevGrant, applyResult, loadProgress, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
+import { applyResult, newProgress, unlockSkill, type Progress } from '../game/progress';
 import { ELEMENTS, type SpellKey } from '../game/elements';
 import { computeLoadout, spForWin, STAGE } from '../game/skills';
 import { useSpeech } from './useSpeech';
@@ -36,23 +33,39 @@ function saveHistory(h: string[]) {
   }
 }
 
-export function App() {
-  const [progress, setProgressState] = useState<Progress>(() => applyDevGrant(loadProgress()));
+/** どの戦闘をするか。chapter = ストーリーのチャプター（強さは固定）、free = 修練場（勝つたびに強くなる） */
+export interface BattleSpec {
+  kind: 'chapter' | 'free';
+  stage: number;
+  enemy: string;
+  /** 画面に出す見出し（「チャプター1 粗大ゴミ」など） */
+  label: string;
+}
+
+/** 戦闘画面。ストーリーのマップ（Game.tsx）から開く */
+export function App({
+  progress,
+  setProgress: commitProgress,
+  battle,
+  onLeave,
+}: {
+  progress: Progress;
+  setProgress: (p: Progress) => void;
+  battle: BattleSpec;
+  /** 戦闘画面を出る。won = 勝って「つづきへ」を押した */
+  onLeave: (won: boolean) => void;
+}) {
   const progressRef = useRef(progress);
+  progressRef.current = progress;
   const setProgress = (p: Progress) => {
     progressRef.current = p;
-    setProgressState(p);
-    saveProgress(p);
+    commitProgress(p);
   };
   const loadout = useMemo(() => computeLoadout(progress.unlocked), [progress.unlocked]);
-  const engine = useMemo(() => new GameEngine(undefined, { loadout: computeLoadout(progress.unlocked), stage: progress.stage }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const engine = useMemo(() => new GameEngine(undefined, { loadout: computeLoadout(progress.unlocked), stage: battle.stage }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [treeOpen, setTreeOpen] = useState(false);
   const treeOpenRef = useRef(treeOpen);
   treeOpenRef.current = treeOpen;
-  /** いま流している紙芝居（流している間は戦闘が止まり、声も呪文にならない）。replay は見直し（見たことにしない） */
-  const [story, setStory] = useState<{ scene: StoryScene; replay?: boolean } | null>(null);
-  const storyRef = useRef(story);
-  storyRef.current = story;
   /** 報酬を渡し済みの戦闘（同じ戦闘で二重に SP を渡さない） */
   const rewardedBattle = useRef<number | null>(null);
   const [lastReward, setLastReward] = useState<string | null>(null);
@@ -81,7 +94,7 @@ export function App() {
     const loop = (t: number) => {
       const dt = Math.min(250, t - last); // タブ非表示から戻ったときに一気に進めない
       last = t;
-      if (!pausedRef.current && !treeOpenRef.current && !storyRef.current) {
+      if (!pausedRef.current && !treeOpenRef.current) {
         acc += dt * speedRef.current;
         while (acc >= TICK_MS) {
           engine.step();
@@ -124,11 +137,10 @@ export function App() {
     });
   };
   // 開発中だけ: コンソールから window.__cast('ファイア') で唱えたことにできる（音声なしで演出を確かめる用）
-  if (import.meta.env.DEV) (window as unknown as { __cast?: (t: string) => void }).__cast = castText;
+  if (import.meta.env.DEV) Object.assign(window, { __cast: castText, __engine: engine });
   // ---- 呪文は音声だけで唱える（文字の入力欄は無い）。ONの間ずっと聞き取る
   const [lastHeard, setLastHeard] = useState<string | null>(null);
   const speech = useSpeech((heard, alternatives) => {
-    if (storyRef.current) return; // 紙芝居の間は唱えても発動しない
     // 認識の候補の中から、呪文として読めるもの（不発にならないもの）を選ぶ
     const best = alternatives.find((t) => interpretSpell(t).actions.some((a) => a.type !== 'NOOP')) ?? heard;
     // 原因を調べられるように、音声認識が出した候補をすべて表示する
@@ -139,7 +151,8 @@ export function App() {
 
   const restart = () => {
     const p = progressRef.current;
-    engine.configure({ loadout: computeLoadout(p.unlocked), stage: p.stage });
+    // 修練場は勝つたびに次のステージへ。チャプターはいつも同じ強さ
+    engine.configure({ loadout: computeLoadout(p.unlocked), stage: battle.kind === 'free' ? p.stage : battle.stage });
     engine.reset();
     setLastReward(null);
   };
@@ -162,25 +175,17 @@ export function App() {
     if (s.phase === 'battle' || rewardedBattle.current === s.battleId) return;
     rewardedBattle.current = s.battleId;
     const win = s.phase === 'victory';
-    setProgress(applyResult(progressRef.current, win));
-    setLastReward(win ? `+${spForWin(s.stage)} SP 獲得！ 次はステージ${s.stage + 1}` : `+${STAGE.SP_LOSE} SP 獲得（負けても少しだけ成長する）`);
+    const p = progressRef.current;
+    if (battle.kind === 'free') {
+      setProgress(applyResult(p, win));
+      setLastReward(win ? `+${spForWin(s.stage)} SP 獲得！ 次はステージ${s.stage + 1}` : `+${STAGE.SP_LOSE} SP 獲得（負けても少しだけ成長する）`);
+    } else {
+      // チャプターの戦闘は何度でも遊べる。SP はもらえるが、修練場のステージは進まない
+      setProgress(win ? { ...p, sp: p.sp + spForWin(s.stage), wins: p.wins + 1 } : { ...p, sp: p.sp + STAGE.SP_LOSE, losses: p.losses + 1 });
+      setLastReward(win ? `+${spForWin(s.stage)} SP 獲得！` : `+${STAGE.SP_LOSE} SP 獲得（負けても少しだけ成長する）`);
+    }
   });
-  // ---- ストーリー: 戦闘の前と、勝ったあとに紙芝居を流す（まだ見ていない場面だけ）
-  useEffect(() => {
-    if (s.phase !== 'battle' || storyRef.current) return;
-    const sc = sceneBefore(s.stage, progressRef.current.story);
-    if (sc) setStory({ scene: sc });
-  }, [s.battleId]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (s.phase !== 'victory' || impact || storyRef.current) return;
-    const sc = sceneAfterWin(s.stage, progressRef.current.story);
-    if (sc) setStory({ scene: sc });
-  }, [s.phase, impact]); // eslint-disable-line react-hooks/exhaustive-deps
-  const closeStory = () => {
-    if (story && !story.replay) setProgress(markStorySeen(progressRef.current, story.scene.id));
-    setStory(null);
-  };
-  const enemyName = storyEnemyName(s.stage) ?? '古代術式体';
+  const enemyName = battle.enemy;
 
   const lastEntry = [...s.spells].reverse().find((e) => e.status !== 'interpreting') ?? s.spells[s.spells.length - 1];
   const enemyCast = s.attacks.filter((a) => a.owner === 'enemy').sort((a, b) => a.resolveAt - b.resolveAt)[0];
@@ -194,7 +199,6 @@ export function App() {
       {impact?.phase !== 'impact' && chargeKey && casting?.castStartAt !== undefined && casting.castEndAt !== undefined && (
         <ChargeOverlay keyName={chargeKey} progress={Math.min(1, (s.time - casting.castStartAt) / Math.max(1, casting.castEndAt - casting.castStartAt))} />
       )}
-      {story && <Kamishibai key={story.scene.id} scene={story.scene} onDone={closeStory} />}
       {drawer && <div className="drawer-backdrop" onClick={() => setDrawer(null)} />}
       <div className={`drawer drawer-left ${drawer === 'guide' ? 'open' : ''}`} aria-hidden={drawer !== 'guide'}>
         <button className="drawer-close" onClick={() => setDrawer(null)}>✕ 閉じる</button>
@@ -213,11 +217,9 @@ export function App() {
             return null;
           }}
           onReset={() => {
-            const p = newProgress();
-            setProgress(p);
-            engine.configure({ loadout: computeLoadout(p.unlocked), stage: p.stage });
-            engine.reset();
-            setLastReward(null);
+            // 最初からやり直すときは、プロローグから
+            setProgress(newProgress());
+            onLeave(false);
           }}
         />
       )}
@@ -233,7 +235,7 @@ export function App() {
               <option value={1}>1x</option>
             </select>
           </label>
-          <button onClick={() => setStory({ scene: wholeEpisode(EPISODES[0]), replay: true })}>📜 ストーリー</button>
+          <button onClick={() => { if (s.phase !== 'battle' || confirm('戦闘をやめてマップに戻る？')) onLeave(false); }}>🗺 マップ</button>
           <button className={drawer === 'guide' ? 'on' : ''} onClick={() => setDrawer((d) => (d === 'guide' ? null : 'guide'))}>📖 呪文の書</button>
           <button onClick={() => setPaused((p) => !p)}>{paused ? '▶ 再開' : '⏸ 一時停止'}</button>
           <button onClick={restart}>↻ 再戦</button>
@@ -257,7 +259,7 @@ export function App() {
               <>
         {/* 敵HUD */}
         <div className="hud hud-enemy">
-          <div className="hud-name">✶ {enemyName} <span className="muted">ステージ{s.stage}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
+          <div className="hud-name">✶ {enemyName} <span className="muted">{battle.kind === 'free' ? `修練場 ステージ${s.stage}` : battle.label}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
           <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
           <Bar value={s.enemyMana.current} max={s.enemyMana.max} kind="mana thin-mana" label={`魔力 ${Math.floor(s.enemyMana.current)}/${s.enemyMana.max}`} />
           <div className="enemy-cast">
@@ -319,7 +321,12 @@ export function App() {
                 {lastReward && <div className="reward">{lastReward}</div>}
                 <div className="overlay-actions">
                   <button onClick={() => setTreeOpen(true)}>🌳 スキルツリー（SP {progress.sp}）</button>
-                  <button onClick={restart}>{s.phase === 'victory' ? `次の戦闘へ（ステージ${progress.stage}）` : 'もう一度戦う'}</button>
+                  {s.phase === 'victory' && battle.kind === 'chapter' ? (
+                    <button className="primary" onClick={() => onLeave(true)}>つづきへ ▶</button>
+                  ) : (
+                    <button onClick={restart}>{s.phase === 'victory' ? `次の戦闘へ（ステージ${progress.stage}）` : 'もう一度戦う'}</button>
+                  )}
+                  <button onClick={() => onLeave(false)}>🗺 マップへ</button>
                 </div>
               </div>
             </div>

@@ -4,6 +4,7 @@
  * 地下の休眠施設で目覚めたヤニかわが、地上を目指す。
  * 中二病全開なのは管理術式オラクルと敵のほう。ヤニかわはずっと眠そうで、軽い敬語でツッコむ。
  *
+ * プロローグ（地下で目覚める）→ チャプター1〜5（それぞれ 紙芝居 → 戦闘 → 紙芝居）。
  * 絵は public/story/ep1/ に置く（無ければ色と演出だけで進む）。
  */
 import type { Episode } from './types';
@@ -15,22 +16,12 @@ export const EPISODE1: Episode = {
   id: 'ep1',
   title: '第1話',
   subtitle: '812年寝坊した詠唱者',
-  stages: [1, 2, 3, 4, 5],
-  enemies: {
-    1: '清掃術式体',
-    2: '巡回術式体',
-    3: '自販機型術式体',
-    4: '記録保管術式体',
-    5: '門番術式体ケルベロス',
-  },
-  scenes: [
-    {
-      id: 'ep1-open',
-      before: 1,
-      pages: [
-        { tone: 'black', title: true, lines: [{ text: '第1話　812年寝坊した詠唱者' }] },
-        { tone: 'black', lines: [{ text: '――西暦、2■■■年。' }, { text: '地下深く。誰もいない施設で、ひとつの機械が壊れた。' }] },
-        {
+  prologue: {
+    id: 'ep1-prologue',
+    pages: [
+      { tone: 'black', title: true, lines: [{ text: '第1話　812年寝坊した詠唱者' }] },
+      { tone: 'black', lines: [{ text: '――西暦、2■■■年。' }, { text: '地下深く。誰もいない施設で、ひとつの機械が壊れた。' }] },
+      {
           img: 'ep1/01-pod',
           tone: 'alarm',
           fx: 'shake',
@@ -39,14 +30,14 @@ export const EPISODE1: Episode = {
             { who: '機械音', text: '強制解凍を開始します。' },
           ],
         },
-        {
+      {
           img: 'ep1/01-pod',
           lines: [
             { who: YANI, text: '……ふぅ…。' },
             { who: YANI, text: '……え、いま何時ですか。' },
           ],
         },
-        {
+      {
           img: 'ep1/01-pod',
           tone: 'holy',
           fx: 'flash',
@@ -57,14 +48,14 @@ export const EPISODE1: Episode = {
             { who: YANI, text: 'はっぴゃく……。' },
           ],
         },
-        {
+      {
           img: 'ep1/01-pod',
           lines: [
             { who: YANI, text: '……納期、さすがに過ぎてるな。' },
             { who: 'ナレーション', text: '彼が申し込んでいたのは「納期が過ぎるまで寝かせてください」プランだった。' },
           ],
         },
-        {
+      {
           img: 'ep1/01-pod',
           lines: [
             { who: YANI, text: 'とりあえず、一服してから考えるね。' },
@@ -72,7 +63,7 @@ export const EPISODE1: Episode = {
             { who: YANI, text: '……ガス、812年分抜けてる。' },
           ],
         },
-        {
+      {
           img: 'ep1/01-pod',
           tone: 'holy',
           lines: [
@@ -81,7 +72,7 @@ export const EPISODE1: Episode = {
             { who: ORACLE, text: '仕様だ。' },
           ],
         },
-        {
+      {
           img: 'ep1/02-wet',
           fx: 'water',
           lines: [
@@ -90,6 +81,17 @@ export const EPISODE1: Episode = {
             { who: 'ナレーション', text: 'タバコは、しめった。' },
           ],
         },
+    ],
+  },
+  chapters: [
+    {
+      id: 'ep1-c1',
+      no: 1,
+      title: '粗大ゴミ',
+      stage: 1,
+      enemy: '清掃術式体',
+      thumb: 'ep1/03-cleaner',
+      before: [
         {
           img: 'ep1/03-cleaner',
           tone: 'alarm',
@@ -108,11 +110,7 @@ export const EPISODE1: Episode = {
           ],
         },
       ],
-    },
-    {
-      id: 'ep1-2',
-      before: 2,
-      pages: [
+      after: [
         {
           img: 'ep1/03-cleaner',
           tone: 'dim',
@@ -131,6 +129,16 @@ export const EPISODE1: Episode = {
             { who: 'ナレーション', text: '812年ぶりに、やる気が出た。' },
           ],
         },
+      ],
+    },
+    {
+      id: 'ep1-c2',
+      no: 2,
+      title: '利用規約',
+      stage: 2,
+      enemy: '巡回術式体',
+      thumb: 'ep1/02-wet',
+      before: [
         {
           tone: 'alarm',
           lines: [
@@ -141,11 +149,27 @@ export const EPISODE1: Episode = {
         },
         { tone: 'guide', lines: [{ who: '遊び方', text: '右上の「🌳 スキル」でスキルツリーが開ける。SP を使って新しい魔法を覚えよう。' }] },
       ],
+      after: [
+        {
+          img: 'ep1/03-cleaner',
+          tone: 'dim',
+          lines: [
+            { who: YANI, text: '……巡回、終わりました？' },
+            { who: ORACLE, text: '汝が終わらせた。' },
+            { who: YANI, text: 'じゃあ今日はもう定時ってことで。' },
+            { who: ORACLE, text: 'この施設に、定時という概念はない。' },
+          ],
+        },
+      ],
     },
     {
-      id: 'ep1-3',
-      before: 3,
-      pages: [
+      id: 'ep1-c3',
+      no: 3,
+      title: '812年もののエナドリ',
+      stage: 3,
+      enemy: '自販機型術式体',
+      thumb: 'ep1/04-vending',
+      before: [
         {
           img: 'ep1/04-vending',
           tone: 'dim',
@@ -175,11 +199,26 @@ export const EPISODE1: Episode = {
           ],
         },
       ],
+      after: [
+        {
+          img: 'ep1/04-vending',
+          lines: [
+            { who: '', text: 'ガコン。' },
+            { who: 'ナレーション', text: '倒れた自販機から、エナドリが1本転がり出た。' },
+            { who: YANI, text: '……812年ものの炭酸。' },
+            { who: YANI, text: '抜けてるな。' },
+          ],
+        },
+      ],
     },
     {
-      id: 'ep1-4',
-      before: 4,
-      pages: [
+      id: 'ep1-c4',
+      no: 4,
+      title: '本番環境',
+      stage: 4,
+      enemy: '記録保管術式体',
+      thumb: 'ep1/05-log',
+      before: [
         {
           img: 'ep1/05-log',
           tone: 'dim',
@@ -215,11 +254,27 @@ export const EPISODE1: Episode = {
           ],
         },
       ],
+      after: [
+        {
+          img: 'ep1/05-log',
+          tone: 'dim',
+          lines: [
+            { who: YANI, text: '……誰が止めたんですかね、これ。' },
+            { who: ORACLE, text: '…………' },
+            { who: ORACLE, text: '地上への門は、この先だ。' },
+            { who: YANI, text: '露骨に話そらしましたね。' },
+          ],
+        },
+      ],
     },
     {
-      id: 'ep1-5',
-      before: 5,
-      pages: [
+      id: 'ep1-c5',
+      no: 5,
+      title: '最後の門',
+      stage: 5,
+      enemy: '門番術式体ケルベロス',
+      thumb: 'ep1/06-gate',
+      before: [
         {
           img: 'ep1/06-gate',
           tone: 'alarm',
@@ -248,11 +303,7 @@ export const EPISODE1: Episode = {
         },
         { tone: 'guide', lines: [{ who: '強敵', text: '5ステージごとに強敵が現れる。体力も攻撃も、いつもより強い。' }] },
       ],
-    },
-    {
-      id: 'ep1-end',
-      afterWin: 5,
-      pages: [
+      after: [
         {
           tone: 'white',
           fx: 'flash',
