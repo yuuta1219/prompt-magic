@@ -681,7 +681,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
 /* ------------------------------------------------ 3D の戦場（プレイヤーの後ろ上から見下ろす） */
 /* 注意: 3D の中の要素に filter / overflow:hidden / opacity<1 を付けると、子が平たくつぶれる */
 .fields {
-  --tilt: 42deg;
+  --tilt: 26deg;
   perspective: 1500px;
   perspective-origin: 50% 100%;
   padding: 6px 24px 18px;
@@ -699,7 +699,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
   transform-origin: 50% 100%;
   transform: rotateX(var(--tilt));
   /* 傾けると縦が縮むぶん、上の余白を詰める */
-  margin-top: calc(var(--cell) * -9.5);
+  margin-top: calc(var(--cell) * -5.8);
 }
 
 .board {
@@ -823,7 +823,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
   :root { --cell: min(7.6vw, 36px); }
   .app { padding: 6px 10px; }
   .fields { padding: 6px 8px 14px; }
-  .stage3d { margin-top: calc(var(--cell) * -8.2); }
+  .stage3d { margin-top: calc(var(--cell) * -3.6); }
   .voice-row { width: 100%; box-sizing: border-box; }
 }
 
@@ -938,7 +938,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
 
 /* ------------------------------------------------ 左の列 = 詠唱の枠（上に敵、まんなかに魔法陣、下に自分） */
 .battle-row { grid-template-columns: minmax(240px, 290px) minmax(0, 1fr); }
-@media (min-width: 1001px) { .arena { --cell: min(7.4vh, 4.3vw, 80px); } }
+@media (min-width: 1001px) { .arena { --cell: min(5.8vh, 4.3vw, 80px); } }
 .battle-row > .chant { justify-content: space-between; align-items: stretch; gap: 10px; padding: 12px 14px; }
 .battle-row > .chant .hud { width: 100%; }
 .chant-middle { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0; }
@@ -1022,3 +1022,17 @@ span.cmd-btn, span.guide-name { cursor: default; }
   .side-wrap > .side { position: static; padding: 8px 0; }
 }
 .side-wrap > .side { scrollbar-width: thin; scrollbar-color: rgba(169, 139, 255, 0.4) transparent; }
+
+/* ------------------------------------------------ 発動の光は魔法の色（--fxc = "r, g, b"） */
+.battle-row.bs-fire { --glow: var(--fxc, 255, 209, 102); }
+.chant-fire { --cc: rgb(var(--fxc, 255, 209, 102)); box-shadow: none; }
+.chant-burst { border-color: var(--cc); }
+@keyframes chant-burst { from { transform: scale(0.6); opacity: 1; box-shadow: 0 0 30px var(--cc); } to { transform: scale(1.8); opacity: 0; } }
+.chant-ok { color: var(--cc); text-shadow: 0 0 12px var(--cc); }
+.cast-banner.ok .cast-banner-text { text-shadow: 0 0 14px rgb(var(--fxc, 255, 209, 102)), 0 0 30px rgba(var(--fxc, 255, 209, 102), 0.7); }
+.cast-banner.ok .cast-banner-sub { color: rgb(var(--fxc, 255, 209, 102)); }
+@keyframes stage-fire {
+  0% { opacity: 1; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 80px rgba(var(--glow), 1), inset 0 0 160px rgba(var(--glow), 0.6); }
+  100% { opacity: 0; }
+}
+@keyframes stage-floor-fire { from { background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(var(--glow), 0.32), transparent 70%); } to { background: transparent; } }

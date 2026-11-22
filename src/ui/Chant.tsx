@@ -12,6 +12,8 @@ export interface ChantFx {
   text: string;
   ok: boolean;
   reason?: string;
+  /** 発動の光の色 "r, g, b"（魔法の属性の色） */
+  color?: string;
 }
 
 /** 話し始めてから魔力が満タンになるまでの時間 (ms) */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GameEngine } from '../game/GameEngine';
+import { GameEngine, lockedParts } from '../game/GameEngine';
 import { interpretSpell } from '../interpreter/SpellInterpreter';
 import { TICK_MS, SPELL_LIMITS } from '../game/constants';
 import { Board } from './Board';
@@ -7,6 +7,7 @@ import { ElementGuide } from './ElementGuide';
 import { SkillTree } from './SkillTree';
 import { AfterOverlay, ChargeOverlay, ImpactOverlay, chargingUltimate, shakeClass, useImpact } from './Cinematic';
 import { applyDevGrant, applyResult, loadProgress, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
+import { ELEMENTS, type SpellKey } from '../game/elements';
 import { computeLoadout, spForWin, STAGE } from '../game/skills';
 import { useSpeech } from './useSpeech';
 import { CastBanner, ChantPanel, type ChantFx } from './Chant';
@@ -97,8 +98,13 @@ export function App() {
     if (!t) return;
     const r = engine.cast(t);
     const id = ++chantId.current;
-    const recognized = interpretSpell(t).actions.some((a) => a.type !== 'NOOP');
-    setChantFx(r.ok && recognized ? { id, text: t, ok: true } : { id, text: t, ok: false, reason: r.ok ? '呪文として読めなかった' : r.error });
+    const spell = interpretSpell(t);
+    const actions = spell.actions;
+    const recognized = actions.some((a) => a.type !== 'NOOP');
+    // まだ覚えていない魔法は、読めても不発になる
+    const locked = lockedParts(spell, engine.s.loadout);
+    const reason = !r.ok ? r.error : !recognized ? '呪文として読めなかった' : locked.length ? `まだ覚えていない: ${locked.join('・')}` : null;
+    setChantFx(reason === null ? { id, text: t, ok: true, color: castColor(actions) } : { id, text: t, ok: false, reason });
     setTimeout(() => setChantFx((x) => (x?.id === id ? null : x)), 1900);
     if (!r.ok) {
       flash(r.error);
@@ -210,7 +216,7 @@ export function App() {
       <main className="arena">
 
         {/* 戦場: 左に敵と自分のHP、右に3Dの盤面 */}
-        <div className={`battle-row bs-${chantFx ? (chantFx.ok ? 'fire' : 'fizzle') : speech.interim ? 'charging' : speech.listening ? 'idle' : 'off'}`}>
+        <div style={chantFx?.color ? ({ '--fxc': chantFx.color } as React.CSSProperties) : undefined} className={`battle-row bs-${chantFx ? (chantFx.ok ? 'fire' : 'fizzle') : speech.interim ? 'charging' : speech.listening ? 'idle' : 'off'}`}>
           {/* 左の列はまるごと詠唱の枠。上に敵、下に自分、そのあいだに大きな魔法陣（押すと音声 ON/OFF） */}
           <ChantPanel
             supported={speech.supported}
@@ -331,6 +337,16 @@ export function App() {
 
     </div>
   );
+}
+
+/** 発動したときに舞台が光る色（"r, g, b"）。攻撃なら最初の魔法の属性の色 */
+function castColor(actions: ReturnType<typeof interpretSpell>['actions']): string {
+  const atk = actions.find((a) => a.type === 'ATTACK');
+  if (atk && atk.type === 'ATTACK' && atk.element in ELEMENTS) return ELEMENTS[atk.element as SpellKey].color;
+  if (actions.some((a) => a.type === 'HEAL')) return '120, 255, 160';
+  if (actions.some((a) => a.type === 'DEFEND')) return '79, 227, 255';
+  if (actions.some((a) => a.type === 'MOVE')) return '190, 200, 255';
+  return '255, 209, 102';
 }
 
 function Bar({ value, max, kind, label }: { value: number; max: number; kind: string; label: string }) {
