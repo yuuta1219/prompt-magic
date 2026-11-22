@@ -1,0 +1,330 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { GameEngine, lockedParts } from '../game/GameEngine';
+import { interpretSpell } from '../interpreter/SpellInterpreter';
+import { TICK_MS, SPELL_LIMITS } from '../game/constants';
+import { Board } from './Board';
+import { ElementGuide } from './ElementGuide';
+import { SkillTree } from './SkillTree';
+import { applyDevGrant, applyResult, loadProgress, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
+import { computeLoadout, spForWin, STAGE } from '../game/skills';
+import { useSpeech } from './useSpeech';
+import { CostPanel, HarnessPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
+
+const EXAMPLES = [
+  'ウォーター',
+  'ライト ツー',
+  'レフト',
+  'ファイア',
+  'パワー ファイア',
+  'ウォーター アンド サンダー',
+  'アイス アンド ファイア',
+  'タイダル アンド サンダー',
+  'ブリザード アンド フレア',
+  'プレディクト アース',
+  'カウンター ガード',
+  'ヒール',
+  'オン アタック ガード',
+  'アクアランス',
+  'スチームバースト',
+  'クリプス ノヴァ',
+  'アポカリプス メメント モリ',
+];
+
+const HISTORY_KEY = 'prompt-magic.history';
+
+function loadHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string').slice(0, 30) : [];
+  } catch {
+    return [];
+  }
+}
+function saveHistory(h: string[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 30)));
+  } catch {
+    /* 保存できなくても遊べる */
+  }
+}
+
+export function App() {
+  const [progress, setProgressState] = useState<Progress>(() => applyDevGrant(loadProgress()));
+  const progressRef = useRef(progress);
+  const setProgress = (p: Progress) => {
+    progressRef.current = p;
+    setProgressState(p);
+    saveProgress(p);
+  };
+  const loadout = useMemo(() => computeLoadout(progress.unlocked), [progress.unlocked]);
+  const engine = useMemo(() => new GameEngine(undefined, { loadout: computeLoadout(progress.unlocked), stage: progress.stage }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [treeOpen, setTreeOpen] = useState(false);
+  const treeOpenRef = useRef(treeOpen);
+  treeOpenRef.current = treeOpen;
+  /** 報酬を渡し済みの戦闘（同じ戦闘で二重に SP を渡さない） */
+  const rewardedBattle = useRef<number | null>(null);
+  const [lastReward, setLastReward] = useState<string | null>(null);
+  const [, setFrame] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>(loadHistory);
+  const [speed, setSpeed] = useState(1);
+  const [paused, setPaused] = useState(false);
+  const speedRef = useRef(speed);
+  const pausedRef = useRef(paused);
+  speedRef.current = speed;
+  pausedRef.current = paused;
+
+  // ---- 固定タイムステップのゲームループ（描画とシミュレーションを分離）
+  useEffect(() => {
+    let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+    const loop = (t: number) => {
+      const dt = Math.min(250, t - last); // タブ非表示から戻ったときに一気に進めない
+      last = t;
+      if (!pausedRef.current && !treeOpenRef.current) {
+        acc += dt * speedRef.current;
+        while (acc >= TICK_MS) {
+          engine.step();
+          acc -= TICK_MS;
+        }
+      }
+      setFrame((f) => (f + 1) % 1_000_000);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [engine]);
+
+  const flash = (m: string) => {
+    setToast(m);
+    setTimeout(() => setToast((t) => (t === m ? null : t)), 2500);
+  };
+
+  const castText = (raw: string) => {
+    const t = raw.trim().slice(0, SPELL_LIMITS.MAX_INPUT_CHARS);
+    if (!t) return;
+    const r = engine.cast(t);
+    if (!r.ok) {
+      flash(r.error);
+      return;
+    }
+    setHistory((h) => {
+      const next = [t, ...h.filter((x) => x !== t)].slice(0, 30);
+      saveHistory(next);
+      return next;
+    });
+  };
+  // ---- 呪文は音声だけで唱える（文字の入力欄は無い）。ONの間ずっと聞き取る
+  const [lastHeard, setLastHeard] = useState<string | null>(null);
+  const speech = useSpeech((heard) => {
+    setLastHeard(heard);
+    castText(heard);
+  });
+
+  const restart = () => {
+    const p = progressRef.current;
+    engine.configure({ loadout: computeLoadout(p.unlocked), stage: p.stage });
+    engine.reset();
+    setLastReward(null);
+  };
+
+  useEffect(() => {
+    const onGlobalKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPaused((p) => !p);
+    };
+    window.addEventListener('keydown', onGlobalKey);
+    return () => window.removeEventListener('keydown', onGlobalKey);
+  }, []);
+
+  const s = engine.s;
+  // 戦闘が終わったら一度だけ SP を渡す
+  useEffect(() => {
+    if (s.phase === 'battle' || rewardedBattle.current === s.battleId) return;
+    rewardedBattle.current = s.battleId;
+    const win = s.phase === 'victory';
+    setProgress(applyResult(progressRef.current, win));
+    setLastReward(win ? `+${spForWin(s.stage)} SP 獲得！ 次はステージ${s.stage + 1}` : `+${STAGE.SP_LOSE} SP 獲得（負けても少しだけ成長する）`);
+  });
+  const lastEntry = [...s.spells].reverse().find((e) => e.status !== 'interpreting') ?? s.spells[s.spells.length - 1];
+  const enemyCast = s.attacks.filter((a) => a.owner === 'enemy').sort((a, b) => a.resolveAt - b.resolveAt)[0];
+  const casting = engine.casting;
+
+  return (
+    <div className="app">
+      <ElementGuide loadout={loadout} />
+      {treeOpen && (
+        <SkillTree
+          progress={progress}
+          inBattle={s.phase === 'battle'}
+          onClose={() => setTreeOpen(false)}
+          onUnlock={(id) => {
+            const r = unlockSkill(progressRef.current, id);
+            if (typeof r === 'string') return r;
+            setProgress(r);
+            engine.applyLoadoutNow(computeLoadout(r.unlocked));
+            return null;
+          }}
+          onReset={() => {
+            const p = newProgress();
+            setProgress(p);
+            engine.configure({ loadout: computeLoadout(p.unlocked), stage: p.stage });
+            engine.reset();
+            setLastReward(null);
+          }}
+        />
+      )}
+      <main className="arena">
+        <header className="title-bar">
+          <h1>PROMPT MAGIC</h1>
+          <span className="subtitle">— 詠唱とは、世界への命令である —</span>
+          <div className="controls">
+            <label>
+              速度
+              <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
+                <option value={0.5}>0.5x</option>
+                <option value={0.75}>0.75x</option>
+                <option value={1}>1x</option>
+              </select>
+            </label>
+            <button onClick={() => setPaused((p) => !p)}>{paused ? '▶ 再開' : '⏸ 一時停止'}</button>
+            <button onClick={restart}>↻ 再戦</button>
+            <button className={`tree-btn ${progress.sp > 0 ? 'has-sp' : ''}`} onClick={() => setTreeOpen(true)}>🌳 スキル（SP {progress.sp}）</button>
+          </div>
+        </header>
+
+        {/* 敵HUD */}
+        <div className="hud hud-enemy">
+          <div className="hud-name">✶ 古代術式体 <span className="muted">ステージ{s.stage}</span></div>
+          <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
+          <Bar value={s.enemyMana.current} max={s.enemyMana.max} kind="mana thin-mana" label={`魔力 ${Math.floor(s.enemyMana.current)}/${s.enemyMana.max}`} />
+          <div className="enemy-cast">
+            {enemyCast ? (
+              <span className="casting-warn">⚠ 詠唱中「{enemyCast.label}」 着弾まで {Math.max(0, (enemyCast.resolveAt - s.time) / 1000).toFixed(1)}s</span>
+            ) : (
+              <span className="muted">
+                {s.isFrozen('enemy') ? `❄ 凍結中 あと${((s.enemy.frozenUntil - s.time) / 1000).toFixed(1)}秒` : s.enemy.shield ? '🛡 防御結界' : '次の行動を思考中…'}
+                {engine.enemyAI.enraged ? ' ／ 暴走状態' : ''}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="fields">
+          <Board s={s} side="enemy" />
+          <div className="rift">
+            <span>— 境界 —</span>
+          </div>
+          <Board s={s} side="player" />
+          {paused && <div className="overlay"><div className="overlay-box">一時停止中<br /><small>Esc で再開</small></div></div>}
+          {s.phase !== 'battle' && (
+            <div className="overlay">
+              <div className={`overlay-box ${s.phase}`}>
+                <div className="result">{s.phase === 'victory' ? 'VICTORY' : 'DEFEAT'}</div>
+                <div className="muted">戦闘時間 {(s.time / 1000).toFixed(1)}秒</div>
+                {lastReward && <div className="reward">{lastReward}</div>}
+                <div className="overlay-actions">
+                  <button onClick={() => setTreeOpen(true)}>🌳 スキルツリー（SP {progress.sp}）</button>
+                  <button onClick={restart}>{s.phase === 'victory' ? `次の戦闘へ（ステージ${progress.stage}）` : 'もう一度戦う'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* プレイヤーHUD */}
+        <div className="hud hud-player">
+          <div className="hud-row">
+            <div className="hud-name">◆ 詠唱者 <span className="muted">YOU</span></div>
+            <div className="status-icons">
+              {s.player.shield && <span className="chip shield">🛡 障壁 {Math.round(s.player.shield.reduction * 100)}% {((s.player.shield.until - s.time) / 1000).toFixed(1)}s</span>}
+              {s.reactiveWard && <span className="chip ward">✧ 反応障壁 待機</span>}
+              {s.harnesses.map((h) => <span key={h.id} className="chip harness-chip">⚙ {h.spec.name}</span>)}
+            </div>
+          </div>
+          <Bar value={s.player.hp} max={s.player.maxHp} kind="hp-player" label={`HP ${s.player.hp}/${s.player.maxHp}`} />
+          <Bar value={s.mana.current} max={s.mana.max} kind="mana" label={`魔力 ${Math.floor(s.mana.current)}/${s.mana.max}（+${s.mana.regenPerSec}/秒）`} />
+          {/* 詠唱バーは常に場所を取っておく（出たり消えたりで画面がずれないように） */}
+          {casting && casting.castStartAt !== undefined && casting.castEndAt !== undefined ? (
+            <Bar value={s.time - casting.castStartAt} max={Math.max(1, casting.castEndAt - casting.castStartAt)} kind="cast" label={`詠唱中: ${casting.text}`} />
+          ) : (
+            <Bar value={0} max={1} kind="cast idle" label="詠唱なし" />
+          )}
+        </div>
+
+        <div className="voice-row">
+          {speech.supported ? (
+            <>
+              <button
+                className={`mic-btn ${speech.listening ? 'on' : ''}`}
+                onClick={() => (speech.listening ? speech.stop() : speech.start())}
+                title="ONの間はずっと聞き取る。話して少し間が空くと詠唱される"
+              >
+                🎙 音声 {speech.listening ? 'ON' : 'OFF'}
+              </button>
+              <div className="voice-text">
+                {speech.listening ? (
+                  speech.interim ? <span className="heard-now">「{speech.interim}」</span> : <span>聞き取り中… 呪文を唱えて、少し間を空けると発動</span>
+                ) : speech.error ? (
+                  <span className="bad">{speech.error}</span>
+                ) : (
+                  <span className="muted">呪文は声で唱える。🎙 を押して ON にしよう（音声はブラウザの音声認識で文字にする。Chrome では Google のサーバーに送られる）</span>
+                )}
+                {lastHeard && !speech.interim && <div className="muted heard-last">最後に聞き取った言葉: 「{lastHeard}」</div>}
+              </div>
+            </>
+          ) : (
+            <span className="muted">このブラウザは音声入力に対応していない（Chrome / Edge / Safari で使える）</span>
+          )}
+        </div>
+        {toast && <div className="toast">{toast}</div>}
+        <div className="examples" aria-label="唱えてみよう">
+          <span className="muted">唱えてみよう:</span>
+          {EXAMPLES.filter((ex) => lockedParts(interpretSpell(ex), loadout).length === 0).map((ex) => (
+            <span key={ex} className="chip-hint">{ex}</span>
+          ))}
+        </div>
+      </main>
+
+      <aside className="side">
+        <Section title="詠唱キュー">
+          <QueuePanel s={s} onCancel={(id) => engine.cancelSpell(id)} />
+        </Section>
+        <Section title="詠唱の解釈結果">
+          <InterpretationPanel entry={lastEntry} />
+        </Section>
+        <Section title="魔力消費内訳">
+          <CostPanel entry={lastEntry} />
+        </Section>
+        <Section title="自律術式（ハーネス）">
+          <HarnessPanel s={s} />
+        </Section>
+        <Section title="戦闘ログ">
+          <LogPanel s={s} />
+        </Section>
+        <Section title="詠唱履歴" right={history.length > 0 ? <button className="btn-mini" onClick={() => { setHistory([]); saveHistory([]); }}>消去</button> : undefined}>
+          {history.length === 0 ? (
+            <div className="muted">唱えた呪文がここに残る</div>
+          ) : (
+            <ul className="history">
+              {history.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      </aside>
+    </div>
+  );
+}
+
+function Bar({ value, max, kind, label }: { value: number; max: number; kind: string; label: string }) {
+  const p = Math.max(0, Math.min(1, value / max));
+  return (
+    <div className={`bar ${kind}`}>
+      <div className="fill" style={{ width: `${p * 100}%` }} />
+      <span className="bar-label">{label}</span>
+    </div>
+  );
+}
