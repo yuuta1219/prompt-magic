@@ -15,7 +15,8 @@ interface SpeechAlt {
 }
 interface SpeechResult {
   isFinal: boolean;
-  0: SpeechAlt;
+  length: number;
+  [index: number]: SpeechAlt;
 }
 interface SpeechEvent {
   resultIndex: number;
@@ -25,6 +26,7 @@ interface Recognition {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   onresult: ((e: SpeechEvent) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
@@ -49,7 +51,10 @@ const ERROR_JA: Record<string, string> = {
 /** これが出たら自動再開しない（何度やっても失敗する種類） */
 const FATAL = new Set(['not-allowed', 'service-not-allowed', 'audio-capture']);
 
-export function useSpeech(onFinal: (text: string) => void) {
+/**
+ * @param onFinal 言葉が確定したときに呼ばれる。alternatives は認識の候補（最大5つ。先頭がいちばん自信のあるもの）
+ */
+export function useSpeech(onFinal: (text: string, alternatives: string[]) => void) {
   const supported = getCtor() !== null;
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
@@ -68,6 +73,8 @@ export function useSpeech(onFinal: (text: string) => void) {
     rec.lang = 'ja-JP';
     rec.continuous = true;
     rec.interimResults = true;
+    // 漢字に変換された候補だけでなく、カタカナの候補も受け取れるように複数もらう
+    rec.maxAlternatives = 5;
     let delivered = 0; // 何番目の結果まで詠唱に回したか
     rec.onresult = (e) => {
       failStreak.current = 0;
@@ -76,8 +83,8 @@ export function useSpeech(onFinal: (text: string) => void) {
         const r = e.results[i];
         if (r.isFinal && i === delivered) {
           delivered++;
-          const text = r[0].transcript.trim();
-          if (text) onFinalRef.current(text);
+          const alts = Array.from({ length: r.length || 1 }, (_, k) => (r[k]?.transcript ?? '').trim()).filter(Boolean);
+          if (alts.length > 0) onFinalRef.current(alts[0], alts);
         } else if (!r.isFinal) mid += r[0].transcript;
       }
       setInterim(mid);

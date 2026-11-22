@@ -13,7 +13,7 @@ import { ELEMENTS, SPELL_KEYS } from '../game/elements';
 
 /** 魔法のカタカナ名（どれか1つでも入っていれば攻撃として読む） */
 const SPELL_NAME_RE = new RegExp(SPELL_KEYS.flatMap((k) => ELEMENTS[k].words.filter((w) => /[ァ-ヶ]/.test(w))).join('|'));
-import { interpretEnglish } from './EnglishCommands';
+import { fuzzySpell, interpretEnglish } from './EnglishCommands';
 import { HARNESS, SPELL_LIMITS } from '../game/constants';
 
 const KANJI_NUM: Record<string, number> = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10, 百: 100 };
@@ -279,6 +279,9 @@ export function interpretSpell(raw: string): Spell {
   // 英語コマンド（カタカナ・アルファベット）を優先。読めなければ日本語として解釈する
   const en = interpretEnglish(text);
   if (en) return en;
+  // 呪文名の聞き間違い・言い間違いを、いちばん近い呪文として拾う
+  const fz = fuzzySpell(text);
+  if (fz) return fz;
 
   if (AUTOMATION_HINT.test(text) && /(たら|とき|時|際|場合|自動|ごと|おき|毎|たび|なら)/.test(text)) {
     const h = parseHarness(text, why);

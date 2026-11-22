@@ -24,19 +24,24 @@ describe('スキルツリー - 定義', () => {
     const keys = SKILLS.filter((s) => !s.special).map((s) => `${s.pos.x},${s.pos.y}`);
     expect(new Set(keys).size).toBe(keys.length);
   });
-  it('スキルは102個。全部解放するのに293 SP', () => {
-    expect(SKILLS).toHaveLength(102);
-    expect(TOTAL_SP).toBe(293);
+  it('スキルは104個。全部解放するのに308 SP', () => {
+    expect(SKILLS).toHaveLength(104);
+    expect(TOTAL_SP).toBe(308);
   });
   it('魔法はすべてツリーのどこかで覚えられる', () => {
     for (const k of SPELL_KEYS) expect(SKILL_BY_ID.get(k)?.kind, k).toBe('spell');
   });
-  it('ウァニタス（特別枠）は、ほかを全部解放したときだけ解放できる', () => {
+  it('フィアト・ノクス（特別枠）は、ほかを全部解放したときだけ解放できる', () => {
     const others = SKILLS.filter((s) => !s.special).map((s) => s.id);
     const almost = new Set(others.slice(0, -1));
-    expect(canUnlock('vanitas', almost, 999)).toMatchObject({ ok: false, reason: expect.stringMatching(/残り1個/) });
-    expect(canUnlock('vanitas', new Set(others), 999).ok).toBe(true);
-    expect(SKILLS.filter((s) => s.special).map((s) => s.id)).toEqual(['vanitas']);
+    expect(canUnlock('fiat_nox', almost, 999)).toMatchObject({ ok: false, reason: expect.stringMatching(/残り1個/) });
+    expect(canUnlock('fiat_nox', new Set(others), 999).ok).toBe(true);
+    expect(SKILLS.filter((s) => s.special).map((s) => s.id)).toEqual(['veni_vidi_vici', 'deus_ex_machina', 'fiat_nox']);
+  });
+  it('デウス・エクス・マキナ（特別枠）は、スキルを50個覚えると解放できる', () => {
+    const others = SKILLS.filter((s) => !s.special).map((s) => s.id);
+    expect(canUnlock('deus_ex_machina', new Set(others.slice(0, 49)), 99)).toMatchObject({ ok: false, reason: expect.stringMatching(/あと1個/) });
+    expect(canUnlock('deus_ex_machina', new Set(others.slice(0, 50)), 99).ok).toBe(true);
   });
   it('合体魔法は両方の枝を覚えないと解放できない', () => {
     const u = new Set(['water', 'fire', 'fire_up', 'flare']);
@@ -113,10 +118,18 @@ describe('スキルツリー - 戦闘への反映', () => {
   });
 
   it('ステージが上がると敵が強くなる', () => {
-    expect(stageStats(1)).toEqual({ enemyHp: 140, enemyPower: 1, thinkMs: 2300 });
-    expect(stageStats(5).enemyHp).toBe(260);
-    expect(stageStats(50).thinkMs).toBe(1500);
-    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(200);
+    // 1〜4戦目は同じ強さ
+    expect(stageStats(1)).toEqual({ enemyHp: 120, enemyPower: 1, thinkMs: 2400, elite: false, tier: 0 });
+    expect(stageStats(4)).toEqual(stageStats(1));
+    // 5戦ごとに強敵（少し強め）
+    expect(stageStats(5)).toMatchObject({ elite: true, enemyHp: 156, enemyPower: 1.15 });
+    expect(stageStats(6)).toEqual(stageStats(1));
+    // 10戦ごとに一律で強くなる
+    expect(stageStats(11)).toMatchObject({ tier: 1, enemyHp: 180, enemyPower: 1.25, thinkMs: 2250, elite: false });
+    expect(stageStats(20)).toMatchObject({ tier: 1, elite: true });
+    expect(stageStats(21)).toMatchObject({ tier: 2, enemyHp: 240 });
+    expect(stageStats(50).thinkMs).toBe(1600); // 段階4・強敵
+    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(120);
   });
 });
 
@@ -152,9 +165,9 @@ describe('補助魔法: パワー', () => {
   });
 });
 
-describe('魔法 49種類', () => {
+describe('魔法', () => {
   it('どの魔法も、名前で唱えると正しい魔法になり、盤面に着弾する', () => {
-    for (const k of SPELL_KEYS) {
+    for (const k of SPELL_KEYS.filter((k) => !ELEMENTS[k].effects || !('selfBuff' in ELEMENTS[k].effects!))) {
       const name = ELEMENTS[k].name;
       const sp = interpretSpell(name);
       expect(sp.actions[0], name).toMatchObject({ type: 'ATTACK', element: k });
@@ -169,8 +182,8 @@ describe('魔法 49種類', () => {
   });
 
   it('長い呪文名は、スペースや「・」で区切っても、続けて言っても通じる', () => {
-    for (const t of ['ウァニタス・ウァニタートゥム・エト・オムニア・ウァニタス', 'ウァニタス ウァニタートゥム エト オムニア ウァニタス', 'ヴァニタス ヴァニタトゥム エト オムニア ヴァニタス', 'バニタスバニタートゥムエトオムニアバニタス']) {
-      expect(interpretSpell(t).actions, t).toEqual([expect.objectContaining({ type: 'ATTACK', element: 'vanitas' })]);
+    for (const t of ['フィアト・ノクス', 'フィアト ノクス', 'フィアットノクス']) {
+      expect(interpretSpell(t).actions, t).toEqual([expect.objectContaining({ type: 'ATTACK', element: 'fiat_nox' })]);
     }
     expect(interpretSpell('メメント・モリ').actions[0]).toMatchObject({ element: 'memento_mori' });
     // 「アポカリプス メメント モリ」は2つの魔法の連続詠唱になる
@@ -183,7 +196,7 @@ describe('魔法 49種類', () => {
 
   it('真・最強魔法: 盤面すべてに999。詠唱が長く、魔力を大量に使う', async () => {
     const { computeSpellCost } = await import('../src/game/ManaSystem');
-    const text = 'ウァニタス ウァニタートゥム エト オムニア ウァニタス';
+    const text = 'フィアト ノクス';
     const c = computeSpellCost(text, interpretSpell(text));
     expect(c.total).toBeGreaterThan(270);
     expect(c.total).toBeLessThanOrEqual(300); // 最初の最大魔力で撃てる
@@ -193,13 +206,13 @@ describe('魔法 49種類', () => {
     castNow(e, text);
     expect(e.s.attacks.find((a) => a.owner === 'player')!.cells).toHaveLength(81);
     e.advance(2000);
-    expect(e.s.enemy.hp).toBe(0); // ステージ10（HP410）でも一撃
+    expect(e.s.enemy.hp).toBe(0); // ステージ10の強敵でも一撃
     expect(e.s.phase).toBe('victory');
-    expect(ELEMENTS.vanitas.damage).toBeGreaterThan(ELEMENTS.apocalypse.damage * 2 - 1);
+    expect(ELEMENTS.fiat_nox.damage).toBeGreaterThan(ELEMENTS.apocalypse.damage * 2 - 1);
   });
 
   it('メメント・モリは弱った敵に2.5倍', () => {
-    const e = new GameEngine(1, { loadout: BASE_ALL_LOADOUT, stage: 10 });
+    const e = new GameEngine(1, { loadout: BASE_ALL_LOADOUT, stage: 30 });
     e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
     castNow(e, 'メメント モリ');
     e.advance(2000);
@@ -248,5 +261,47 @@ describe('魔法 49種類', () => {
     e.advance(4000);
     expect(e.s.player.hp).toBe(102);
     expect(computeLoadout(['swift']).castMult).toBe(0.85);
+  });
+});
+
+describe('デウス・エクス・マキナ', () => {
+  it('敵の今のHPを半分にし（結界も無視）、1回の戦闘で1度しか使えない', () => {
+    const e = new GameEngine(1, { loadout: BASE_ALL_LOADOUT, stage: 5 });
+    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
+    e.s.enemy.hp = 201;
+    e.s.enemy.shield = { reduction: 0.4, until: 999999 };
+    castNow(e, 'デウス エクス マキナ');
+    e.advance(2000);
+    expect(e.s.enemy.hp).toBe(100);
+    e.s.mana.current = e.s.mana.max;
+    castNow(e, 'デウス・エクス・マキナ');
+    expect(e.s.spells.at(-1)!.status).toBe('failed');
+    expect(e.s.spells.at(-1)!.error).toMatch(/1度しか使えない/);
+    e.advance(2000);
+    expect(e.s.enemy.hp).toBe(100);
+    // 次の戦闘ではまた使える
+    e.reset();
+    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
+    castNow(e, 'デウス エクス マキナ');
+    expect(e.s.spells.at(-1)!.status).toBe('done');
+  });
+});
+
+describe('ウェニー・ウィディー・ウィキー', () => {
+  it('スキル25個で解放。使うとこの戦闘のあいだ攻撃力1.5倍、1戦闘1回、次の戦闘では元に戻る', () => {
+    const others = SKILLS.filter((s) => !s.special).map((s) => s.id);
+    expect(canUnlock('veni_vidi_vici', new Set(others.slice(0, 24)), 99).ok).toBe(false);
+    expect(canUnlock('veni_vidi_vici', new Set(others.slice(0, 25)), 99).ok).toBe(true);
+    const e = new GameEngine(1, { loadout: BASE_ALL_LOADOUT });
+    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
+    castNow(e, 'ウェニー ウィディー ウィキー');
+    expect(e.s.attackBuff).toBe(1.5);
+    expect(e.s.attacks.filter((a) => a.owner === 'player')).toHaveLength(0); // 攻撃はしない
+    castNow(e, 'ファイア');
+    expect(e.s.attacks.find((a) => a.owner === 'player')!.damage).toBe(45);
+    castNow(e, 'ヴェニ ヴィディ ヴィキ');
+    expect(e.s.spells.at(-1)!.error).toMatch(/1度しか使えない/);
+    e.reset();
+    expect(e.s.attackBuff).toBe(1);
   });
 });

@@ -1,34 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { GameEngine, lockedParts } from '../game/GameEngine';
+import { GameEngine } from '../game/GameEngine';
 import { interpretSpell } from '../interpreter/SpellInterpreter';
 import { TICK_MS, SPELL_LIMITS } from '../game/constants';
 import { Board } from './Board';
 import { ElementGuide } from './ElementGuide';
 import { SkillTree } from './SkillTree';
+import { AfterOverlay, ChargeOverlay, ImpactOverlay, chargingUltimate, shakeClass, useImpact } from './Cinematic';
 import { applyDevGrant, applyResult, loadProgress, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
 import { computeLoadout, spForWin, STAGE } from '../game/skills';
 import { useSpeech } from './useSpeech';
 import { CostPanel, HarnessPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
 
-const EXAMPLES = [
-  'ウォーター',
-  'ライト ツー',
-  'レフト',
-  'ファイア',
-  'パワー ファイア',
-  'ウォーター アンド サンダー',
-  'アイス アンド ファイア',
-  'タイダル アンド サンダー',
-  'ブリザード アンド フレア',
-  'プレディクト アース',
-  'カウンター ガード',
-  'ヒール',
-  'オン アタック ガード',
-  'アクアランス',
-  'スチームバースト',
-  'クリプス ノヴァ',
-  'アポカリプス メメント モリ',
-];
 
 const HISTORY_KEY = 'prompt-magic.history';
 
@@ -118,9 +100,13 @@ export function App() {
   };
   // ---- 呪文は音声だけで唱える（文字の入力欄は無い）。ONの間ずっと聞き取る
   const [lastHeard, setLastHeard] = useState<string | null>(null);
-  const speech = useSpeech((heard) => {
-    setLastHeard(heard);
-    castText(heard);
+  const speech = useSpeech((heard, alternatives) => {
+    // 認識の候補の中から、呪文として読めるもの（不発にならないもの）を選ぶ
+    const best = alternatives.find((t) => interpretSpell(t).actions.some((a) => a.type !== 'NOOP')) ?? heard;
+    // 原因を調べられるように、音声認識が出した候補をすべて表示する
+    setLastHeard(alternatives.map((t) => (t === best ? `【${t}】` : t)).join(' ／ '));
+    engine.s.log('ai', `聞き取り候補: ${alternatives.map((t) => `「${t}」`).join(' ')}`);
+    castText(best);
   });
 
   const restart = () => {
@@ -139,6 +125,7 @@ export function App() {
   }, []);
 
   const s = engine.s;
+  const impact = useImpact(s);
   // 戦闘が終わったら一度だけ SP を渡す
   useEffect(() => {
     if (s.phase === 'battle' || rewardedBattle.current === s.battleId) return;
@@ -150,9 +137,15 @@ export function App() {
   const lastEntry = [...s.spells].reverse().find((e) => e.status !== 'interpreting') ?? s.spells[s.spells.length - 1];
   const enemyCast = s.attacks.filter((a) => a.owner === 'enemy').sort((a, b) => a.resolveAt - b.resolveAt)[0];
   const casting = engine.casting;
+  const chargeKey = chargingUltimate(casting);
 
   return (
-    <div className="app">
+    <div className={`app ${shakeClass(impact)}`}>
+      {impact?.phase === 'impact' && <ImpactOverlay impact={impact} />}
+      {impact?.phase === 'after' && <AfterOverlay impact={impact} />}
+      {impact?.phase !== 'impact' && chargeKey && casting?.castStartAt !== undefined && casting.castEndAt !== undefined && (
+        <ChargeOverlay keyName={chargeKey} progress={Math.min(1, (s.time - casting.castStartAt) / Math.max(1, casting.castEndAt - casting.castStartAt))} />
+      )}
       <ElementGuide loadout={loadout} />
       {treeOpen && (
         <SkillTree
@@ -196,7 +189,7 @@ export function App() {
 
         {/* 敵HUD */}
         <div className="hud hud-enemy">
-          <div className="hud-name">✶ 古代術式体 <span className="muted">ステージ{s.stage}</span></div>
+          <div className="hud-name">✶ 古代術式体 <span className="muted">ステージ{s.stage}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
           <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
           <Bar value={s.enemyMana.current} max={s.enemyMana.max} kind="mana thin-mana" label={`魔力 ${Math.floor(s.enemyMana.current)}/${s.enemyMana.max}`} />
           <div className="enemy-cast">
@@ -218,7 +211,7 @@ export function App() {
           </div>
           <Board s={s} side="player" />
           {paused && <div className="overlay"><div className="overlay-box">一時停止中<br /><small>Esc で再開</small></div></div>}
-          {s.phase !== 'battle' && (
+          {s.phase !== 'battle' && impact?.phase !== 'impact' && (
             <div className="overlay">
               <div className={`overlay-box ${s.phase}`}>
                 <div className="result">{s.phase === 'victory' ? 'VICTORY' : 'DEFEAT'}</div>
@@ -240,6 +233,7 @@ export function App() {
             <div className="status-icons">
               {s.player.shield && <span className="chip shield">🛡 障壁 {Math.round(s.player.shield.reduction * 100)}% {((s.player.shield.until - s.time) / 1000).toFixed(1)}s</span>}
               {s.reactiveWard && <span className="chip ward">✧ 反応障壁 待機</span>}
+              {s.attackBuff > 1 && <span className="chip ward">⚔ 攻撃力×{s.attackBuff}</span>}
               {s.harnesses.map((h) => <span key={h.id} className="chip harness-chip">⚙ {h.spec.name}</span>)}
             </div>
           </div>
@@ -271,7 +265,7 @@ export function App() {
                 ) : (
                   <span className="muted">呪文は声で唱える。🎙 を押して ON にしよう（音声はブラウザの音声認識で文字にする。Chrome では Google のサーバーに送られる）</span>
                 )}
-                {lastHeard && !speech.interim && <div className="muted heard-last">最後に聞き取った言葉: 「{lastHeard}」</div>}
+                {lastHeard && !speech.interim && <div className="muted heard-last">聞き取った候補（【】が使ったもの）: {lastHeard}</div>}
               </div>
             </>
           ) : (
@@ -279,12 +273,6 @@ export function App() {
           )}
         </div>
         {toast && <div className="toast">{toast}</div>}
-        <div className="examples" aria-label="唱えてみよう">
-          <span className="muted">唱えてみよう:</span>
-          {EXAMPLES.filter((ex) => lockedParts(interpretSpell(ex), loadout).length === 0).map((ex) => (
-            <span key={ex} className="chip-hint">{ex}</span>
-          ))}
-        </div>
       </main>
 
       <aside className="side">

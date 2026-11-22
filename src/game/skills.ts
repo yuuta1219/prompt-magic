@@ -1,5 +1,5 @@
 /**
- * スキルツリー（102個）。
+ * スキルツリー（104個。うち特別枠3つ）。
  *
  * - 移動は最初から使える。ツリーの中心はウォーター（最初から習得済み）
  * - SP を払って、線でつながった先のスキルを解放していく
@@ -31,8 +31,9 @@ export interface SkillDef {
   desc: string;
   /** 唱え方（呪文・コマンドのとき） */
   incantation?: string;
-  /** 特別枠: ほかのスキルを全部解放したときだけ解放できる（マップには置かない） */
+  /** 特別枠（マップには置かない）。needCount があればその数のスキルを覚えたとき、無ければほかを全部覚えたときに解放できる */
   special?: boolean;
+  needCount?: number;
 }
 
 export const TREE_SIZE = 17;
@@ -132,7 +133,9 @@ export const SKILLS: SkillDef[] = [
   { id: 'crypt_nova', name: 'クリプス・ノヴァ', kind: 'spell', cost: 5, requires: ['eclipse'], pos: { x: 14, y: 14 }, branch: 'dark', incantation: 'クリプス ノヴァ', desc: '周囲7×7にランダム10か所（威力26）。結界を貫く' },
   { id: 'apocalypse', name: 'アポカリプス', kind: 'spell', cost: 8, requires: ['crypt_nova'], pos: { x: 15, y: 15 }, branch: 'dark', incantation: 'アポカリプス', desc: '【究極】盤面すべて（威力70）。結界を貫き、敵の魔力-80' },
   { id: 'memento_mori', name: 'メメント・モリ', kind: 'spell', cost: 8, requires: ['crypt_nova'], pos: { x: 13, y: 15 }, branch: 'dark', incantation: 'メメント モリ', desc: '【究極】盤面すべて（威力45）。敵のHPが40%以下なら2.5倍。敵の魔力-100' },
-  { id: 'vanitas', name: 'ウァニタス・ウァニタートゥム・エト・オムニア・ウァニタス', kind: 'spell', cost: 15, requires: [], special: true, pos: { x: -1, y: -1 }, branch: 'dark', incantation: 'ウァニタス ウァニタートゥム エト オムニア ウァニタス', desc: '【真・最強】「空の空、すべては空しい」。盤面すべて（威力999）。結界を貫き、敵の魔力を消し去り、時を止めて3秒凍結、30%回復' },
+  { id: 'veni_vidi_vici', name: 'ウェニー・ウィディー・ウィキー', kind: 'spell', cost: 5, requires: [], special: true, needCount: 25, pos: { x: -1, y: -1 }, branch: 'hybrid', incantation: 'ウェニー ウィディー ウィキー', desc: '【特別】「来た、見た、勝った」。この戦闘のあいだ攻撃力1.5倍。1回の戦闘で1度だけ使える。スキルを25個覚えると解放できる' },
+  { id: 'deus_ex_machina', name: 'デウス・エクス・マキナ', kind: 'spell', cost: 10, requires: [], special: true, needCount: 50, pos: { x: -1, y: -1 }, branch: 'hybrid', incantation: 'デウス エクス マキナ', desc: '【特別】敵の今のHPを半分にする（結界も無視）。1回の戦闘で1度だけ使える。スキルを50個覚えると解放できる' },
+  { id: 'fiat_nox', name: 'フィアト・ノクス', kind: 'spell', cost: 15, requires: [], special: true, pos: { x: -1, y: -1 }, branch: 'dark', incantation: 'フィアト ノクス', desc: '【真・最強】「闇あれ」。盤面すべて（威力999）。結界を貫き、敵の魔力を消し去り、時を止めて3秒凍結、30%回復' },
   { id: 'auto', name: '自律術式', kind: 'command', cost: 2, requires: ['predict'], pos: { x: 11, y: 10 }, branch: 'dark', incantation: 'オン アタック ○○', desc: '条件で自動発動する術式を1つ登録（オン アタック / オン ヒット / エブリ）' },
   { id: 'mana_regen', name: 'マナ回復アップ', kind: 'passive', cost: 2, requires: ['quick'], pos: { x: 12, y: 11 }, branch: 'dark', desc: '魔力の回復 +3/秒' },
   { id: 'mana_regen2', name: 'マナ回復アップII', kind: 'passive', cost: 3, requires: ['mana_regen'], pos: { x: 14, y: 12 }, branch: 'dark', desc: '魔力の回復 さらに+3/秒' },
@@ -230,6 +233,13 @@ export const BASE_ALL_LOADOUT: Loadout = {
   commands: new Set(COMMAND_SKILLS),
 };
 
+/** 特別枠の解放まで、あと何個スキルを覚える必要があるか */
+export function specialRemaining(def: SkillDef, unlocked: Set<string>): number {
+  const normal = SKILLS.filter((s) => !s.special);
+  const have = normal.filter((s) => unlocked.has(s.id)).length;
+  return Math.max(0, (def.needCount ?? normal.length) - have);
+}
+
 export type UnlockCheck = { ok: true } | { ok: false; reason: string };
 
 export function canUnlock(id: string, unlocked: Set<string>, sp: number): UnlockCheck {
@@ -237,8 +247,8 @@ export function canUnlock(id: string, unlocked: Set<string>, sp: number): Unlock
   if (!def) return { ok: false, reason: '存在しないスキル' };
   if (unlocked.has(id)) return { ok: false, reason: '習得済み' };
   if (def.special) {
-    const rest = SKILLS.filter((s) => !s.special && !unlocked.has(s.id)).length;
-    if (rest > 0) return { ok: false, reason: `ほかのスキルをすべて解放すると解放できる（残り${rest}個）` };
+    const rest = specialRemaining(def, unlocked);
+    if (rest > 0) return { ok: false, reason: def.needCount ? `スキルを${def.needCount}個覚えると解放できる（あと${rest}個）` : `ほかのスキルをすべて解放すると解放できる（残り${rest}個）` };
   }
   const names = (ids: string[]) => ids.map((r) => SKILL_BY_ID.get(r)?.name).join('」と「');
   if (def.requiresAll) {
@@ -270,13 +280,41 @@ export interface StageStats {
   enemyPower: number;
   /** 敵が行動を考える間隔 (ms) */
   thinkMs: number;
+  /** 5戦ごとの強敵 */
+  elite: boolean;
+  /** 10戦ごとの段階（1〜10戦目が 0） */
+  tier: number;
 }
 
+/**
+ * 敵の強さ。
+ * - 10戦ごとに一律で強くなる（1〜10 / 11〜20 / 21〜30 …で段階が上がる。段階の中では伸びない）
+ * - 5戦ごと（5, 10, 15 …）は「強敵」で少し強め
+ */
+export const STAGE_RULES = {
+  BASE_HP: 120,
+  BASE_THINK_MS: 2400,
+  /** 10戦ごとの上がり幅 */
+  TIER_HP: 0.5,
+  TIER_POWER: 0.25,
+  TIER_THINK_MS: 150,
+  /** 強敵の倍率 */
+  ELITE_HP: 1.3,
+  ELITE_POWER: 1.15,
+  ELITE_THINK_MS: 200,
+  MIN_THINK_MS: 1400,
+} as const;
+
 export function stageStats(stage: number): StageStats {
-  const n = Math.max(1, Math.floor(stage)) - 1;
+  const st = Math.max(1, Math.floor(stage));
+  const tier = Math.floor((st - 1) / 10);
+  const elite = st % 5 === 0;
+  const R = STAGE_RULES;
   return {
-    enemyHp: 140 + 30 * n,
-    enemyPower: 1 + 0.08 * n,
-    thinkMs: Math.max(1500, 2300 - 80 * n),
+    enemyHp: Math.round(R.BASE_HP * (1 + R.TIER_HP * tier) * (elite ? R.ELITE_HP : 1)),
+    enemyPower: Math.round((1 + R.TIER_POWER * tier) * (elite ? R.ELITE_POWER : 1) * 100) / 100,
+    thinkMs: Math.max(R.MIN_THINK_MS, R.BASE_THINK_MS - R.TIER_THINK_MS * tier - (elite ? R.ELITE_THINK_MS : 0)),
+    elite,
+    tier,
   };
 }

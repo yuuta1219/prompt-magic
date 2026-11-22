@@ -363,6 +363,7 @@ describe('GameEngine - 敵の魔力', () => {
     e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
     e.s.enemyMana.current = 0;
     e.s.enemyMana.regen = () => {};
+    e.s.enemy.hp = e.s.enemy.maxHp = 9999; // 途中で倒しきらないように
     const pos = { ...e.s.enemy.pos };
     for (let i = 0; i < 5; i++) {
       castNow(e, 'ファイア');

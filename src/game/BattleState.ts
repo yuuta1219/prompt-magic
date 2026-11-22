@@ -40,6 +40,8 @@ export class BattleState {
   /** 敵の攻撃力の倍率・思考間隔（ステージで決まる） */
   readonly enemyPower: number;
   readonly enemyThinkMs: number;
+  /** 5戦ごとの強敵か */
+  readonly elite: boolean;
   /** 敵の魔力（プレイヤーと同じルール: 最大300・毎秒8回復） */
   enemyMana = new ManaPool();
 
@@ -50,6 +52,12 @@ export class BattleState {
   reactiveWard: ReactiveWard | null = null;
   /** 敵フィールドの濡れたマス */
   wet: WetCell[] = [];
+  /** この戦闘ですでに使った「1度きり」の魔法 */
+  usedOnce = new Set<string>();
+  /** この戦闘のあいだの攻撃力の倍率（ウェニー・ウィディー・ウィキーなど） */
+  attackBuff = 1;
+  /** 大魔法の演出イベント（UI が拾って全画面演出を出す） */
+  cinematics: { id: number; key: string }[] = [];
 
   /** このtick中に発生したイベント（自律術式の監視用） */
   events: BattleEvent[] = [];
@@ -68,6 +76,7 @@ export class BattleState {
     this.enemy = { hp: st.enemyHp, maxHp: st.enemyHp, pos: { ...ENEMY.START }, shield: null, frozenUntil: 0 };
     this.enemyPower = st.enemyPower;
     this.enemyThinkMs = st.thinkMs;
+    this.elite = st.elite;
     this.mana = new ManaPool(this.loadout.manaMax, this.loadout.manaMax, this.loadout.manaRegen);
   }
 
@@ -119,6 +128,12 @@ export class BattleState {
 
   isFrozen(side: Side): boolean {
     return this.combatant(side).frozenUntil > this.time;
+  }
+
+  /** 大魔法の全画面演出を出す */
+  cinematic(key: string): void {
+    this.cinematics.push({ id: this.nextId(), key });
+    if (this.cinematics.length > 10) this.cinematics.shift();
   }
 
   emit(ev: BattleEvent): void {

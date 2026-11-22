@@ -37,6 +37,10 @@ export interface Effects {
   pierce?: boolean;
   /** 敵のHPが below（割合）以下なら威力 ×mult（とどめの一撃） */
   execute?: { below: number; mult: number };
+  /** 命中すると敵の今のHPを半分にする（威力・結界は無視） */
+  halve?: boolean;
+  /** 攻撃ではなく自分への強化: この戦闘のあいだ攻撃力をこの倍率にする */
+  selfBuff?: number;
 }
 
 export type Branch = 'water' | 'fire' | 'thunder' | 'ice' | 'wind' | 'earth' | 'holy' | 'dark' | 'hybrid';
@@ -57,6 +61,8 @@ interface RawDef {
   delayExtraMs?: number;
   /** 究極魔法（演出・表示用） */
   ultimate?: boolean;
+  /** 1回の戦闘で1度しか使えない */
+  oncePerBattle?: boolean;
   summary: string;
 }
 
@@ -114,7 +120,9 @@ const RAW = {
   crypt_nova: { name: 'クリプス・ノヴァ', words: ['クリプスノヴァ', 'クリプスノバ'], branch: 'dark', shape: { k: 'random', n: 10, r: 3 }, damage: 26, cost: 110, effects: { pierce: true }, castExtraMs: 800, summary: '冥府の新星。周囲7×7に10の闇が炸裂する。' },
   apocalypse: { name: 'アポカリプス', words: ['アポカリプス', 'apocalypse'], branch: 'dark', shape: { k: 'board' }, damage: 70, cost: 190, effects: { pierce: true, manaBreak: 80 }, castExtraMs: 2000, ultimate: true, summary: '黙示録。世界の終わりを告げ、盤面すべてを押しつぶす。' },
   memento_mori: { name: 'メメント・モリ', words: ['メメントモリ', 'mementomori'], branch: 'dark', shape: { k: 'board' }, damage: 45, cost: 170, effects: { execute: { below: 0.4, mult: 2.5 }, manaBreak: 100 }, castExtraMs: 1800, ultimate: true, summary: '死を想え。弱った敵（HP40%以下）には2.5倍の死の宣告。とどめの魔法。' },
-  vanitas: { name: 'ウァニタス・ウァニタートゥム・エト・オムニア・ウァニタス', words: ['ウァニタスウァニタートゥムエトオムニアウァニタス', 'ウァニタスウァニタトゥムエトオムニアウァニタス', 'ヴァニタスヴァニタートゥムエトオムニアヴァニタス', 'ヴァニタスヴァニタトゥムエトオムニアヴァニタス', 'バニタスバニタートゥムエトオムニアバニタス', 'バニタスバニタトゥムエトオムニアバニタス', 'vanitasvanitatumetomniavanitas'], branch: 'dark', shape: { k: 'board' }, damage: 999, cost: 270, effects: { pierce: true, manaBreak: 9999, freeze: 3000, drain: 0.3 }, castExtraMs: 3200, ultimate: true, summary: '「空の空、すべては空しい」（Vanitas vanitatum et omnia vanitas）。死を想った者が最後に知る真理。時を止め、敵の魔力を消し去り、盤面すべてを空に還す真の最強魔法。' },
+  veni_vidi_vici: { name: 'ウェニー・ウィディー・ウィキー', words: ['ウェニーウィディーウィキー', 'ウェニウィディウィキ', 'ウェーニーウィーディーウィーキー', 'ヴェニヴィディヴィキ', 'ヴェニーヴィディーヴィキー', 'ベニビディビキ', 'ベニービディービキー', 'ウェイニービーディウィーキー', 'ウェイニービディウィキ', 'venividivici'], branch: 'hybrid', shape: { k: 'single' }, damage: 0, cost: 60, effects: { selfBuff: 1.5 }, castExtraMs: 500, oncePerBattle: true, summary: '「来た、見た、勝った」（カエサル）。勝利を宣言し、この戦闘のあいだ攻撃力が1.5倍になる。1回の戦闘で1度だけ。' },
+  deus_ex_machina: { name: 'デウス・エクス・マキナ', words: ['デウスエクスマキナ', 'deusexmachina'], branch: 'hybrid', shape: { k: 'board' }, damage: 0, cost: 100, effects: { halve: true }, castExtraMs: 1000, ultimate: true, oncePerBattle: true, summary: '機械仕掛けの神。物語を無理やり終わらせる神が降り、敵の今のHPを半分にする。1回の戦闘で1度だけ。' },
+  fiat_nox: { name: 'フィアト・ノクス', words: ['フィアトノクス', 'フィアットノクス', 'フィアトノックス', 'フィアットノックス', 'fiatnox'], branch: 'dark', shape: { k: 'board' }, damage: 999, cost: 270, effects: { pierce: true, manaBreak: 9999, freeze: 3000, drain: 0.3 }, castExtraMs: 3200, ultimate: true, summary: '「闇あれ」（Fiat nox）。神が「光あれ」で世界を始めたように、この一言で世界を終わらせる。時を止め、敵の魔力を消し去り、盤面すべてを闇に還す真の最強魔法。' },
   // ================================================================ 合体魔法（2つの枝を極めると覚えられる）
   steam: { name: 'スチームバースト', words: ['スチームバースト', 'steamburst'], branch: 'hybrid', shape: { k: 'square', r: 1 }, damage: 22, cost: 56, effects: { wet: true, melt: true }, summary: '水と炎の合体魔法。3×3の蒸気爆発で濡らす。' },
   storm: { name: 'サンダーストーム', words: ['サンダーストーム', 'thunderstorm'], branch: 'hybrid', shape: { k: 'random', n: 6, r: 2 }, damage: 20, cost: 62, effects: { wet: true, shock: true }, summary: '水と雷の合体魔法。濡らしながら落ちるので必ず感電する。' },
@@ -174,6 +182,8 @@ function effectsLabel(e: Effects | undefined): string {
   if (e.drain) out.push(`ダメージの${Math.round(e.drain * 100)}%を回復`);
   if (e.manaBreak) out.push(e.manaBreak >= 9999 ? '敵の魔力をすべて消す' : `敵の魔力-${e.manaBreak}`);
   if (e.pierce) out.push('防御結界を貫く');
+  if (e.selfBuff) out.push(`この戦闘のあいだ攻撃力${e.selfBuff}倍（攻撃はしない）`);
+  if (e.halve) out.push('命中すると敵の今のHPを半分にする');
   if (e.execute) out.push(`敵のHPが${Math.round(e.execute.below * 100)}%以下なら${e.execute.mult}倍`);
   return out.join('・') + '。';
 }

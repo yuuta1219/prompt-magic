@@ -2,7 +2,7 @@
  * 進み具合（SP・習得済みスキル・ステージ）。ブラウザの localStorage に保存する。
  * 保存できない環境（プライベートウィンドウなど）でも、その場では遊べる。
  */
-import { INITIAL_UNLOCKED, SKILL_BY_ID, STAGE, canUnlock, spForWin } from './skills';
+import { INITIAL_UNLOCKED, SKILLS, SKILL_BY_ID, STAGE, canUnlock, spForWin } from './skills';
 
 export interface Progress {
   sp: number;
@@ -15,7 +15,7 @@ export interface Progress {
 const KEY = 'prompt-magic.progress.v1';
 
 /** 名前を変えたスキル（古い保存データを引き継ぐため） */
-const RENAMED: Record<string, string> = { void_ragnarok: 'vanitas' };
+const RENAMED: Record<string, string> = { void_ragnarok: 'fiat_nox', vanitas: 'fiat_nox' };
 
 export function newProgress(): Progress {
   return { sp: STAGE.SP_START, unlocked: [...INITIAL_UNLOCKED], stage: 1, wins: 0, losses: 0 };
@@ -42,17 +42,16 @@ export function loadProgress(): Progress {
 }
 
 /**
- * 開発用: URL に ?addsp=500 を付けて開くと SP を足す（npm run dev のときだけ。本番ビルドでは無効）。
- * 一度足したら URL から消すので、リロードしても二重には増えない。
+ * 開発用: URL に ?unlockall を付けて開くと、スキルをすべて解放する（npm run dev のときだけ。本番ビルドでは無効）。
+ * 一度解放したら URL から消すので、リロードしても何度も実行されない。
  */
 export function applyDevGrant(p: Progress): Progress {
   if (!import.meta.env.DEV || typeof window === 'undefined') return p;
   const url = new URL(window.location.href);
-  const n = Number(url.searchParams.get('addsp'));
-  if (!Number.isFinite(n) || n <= 0) return p;
-  url.searchParams.delete('addsp');
+  if (!url.searchParams.has('unlockall')) return p;
+  url.searchParams.delete('unlockall');
   window.history.replaceState(null, '', url.toString());
-  const next = { ...p, sp: p.sp + Math.floor(Math.min(n, 100000)) };
+  const next = { ...p, unlocked: SKILLS.map((s) => s.id) };
   saveProgress(next);
   return next;
 }

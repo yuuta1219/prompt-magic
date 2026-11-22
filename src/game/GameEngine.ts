@@ -189,6 +189,14 @@ export class GameEngine {
       this.version++;
       return true;
     }
+    const spent = spell.actions.find((a) => a.type === 'ATTACK' && ELEMENTS[a.element].oncePerBattle && s.usedOnce.has(a.element));
+    if (spent && spent.type === 'ATTACK') {
+      entry.status = 'failed';
+      entry.error = `${ELEMENTS[spent.element].name}は1回の戦闘で1度しか使えない`;
+      s.log('error', entry.error);
+      this.version++;
+      return true;
+    }
     entry.spell = spell;
     entry.reasoning = spell.reasoning;
     for (const r of spell.reasoning) s.log('ai', `解釈: ${r}`);
@@ -364,6 +372,9 @@ export class GameEngine {
       }
     }
 
+    // 大魔法は当たり外れに関係なく、着弾の瞬間に全画面演出
+    if (a.owner === 'player' && a.element !== 'dark' && ELEMENTS[a.element].ultimate) s.cinematic(a.element);
+
     if (!hit) {
       s.log(a.owner === 'player' ? 'magic' : 'enemy', a.owner === 'player' ? `${a.label}は外れた` : `敵の「${a.label}」を回避した`);
       return;
@@ -397,7 +408,8 @@ export class GameEngine {
       reduction = 0;
       bonus.push('結界貫通');
     }
-    const dmg = Math.max(1, Math.round(a.damage * mult * (1 - reduction)));
+    const dmg = fx.halve ? Math.ceil(target.hp / 2) : Math.max(1, Math.round(a.damage * mult * (1 - reduction)));
+    if (fx.halve) bonus.splice(0, bonus.length, 'HP半減');
     target.hp = Math.max(0, target.hp - dmg);
     const shieldNote = reduction > 0 ? `（障壁で${Math.round(reduction * 100)}%軽減）` : '';
     if (a.owner === 'player') {

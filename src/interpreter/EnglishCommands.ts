@@ -12,6 +12,7 @@
 import type { Direction, Element, ExecutableAction, HarnessSpec, Spell } from './schema';
 import { HARNESS, SPELL_LIMITS } from '../game/constants';
 import { ELEMENTS, SPELL_KEYS } from '../game/elements';
+import { KANJI_READINGS, editDistance, hiraToKata, kanaKey, romajiToKata } from './kana';
 
 type Tok =
   | { k: 'dir'; v: 'up' | 'down' | 'left' | 'right' }
@@ -67,8 +68,9 @@ const DICT: [string[], Tok][] = [
 
 const ALL_DICT: [string[], Tok][] = [...DICT, ...SPELL_KEYS.map((k) => [ELEMENTS[k].words.map((w) => w.toLowerCase()), { k: 'el', v: k }] as [string[], Tok])];
 
+/** カタカナの言葉は「かなのキー」（kana.ts）にそろえて登録する。表記ゆれを吸収するため */
 const KATA_ENTRIES: [string, Tok][] = ALL_DICT.flatMap(([words, tok]) =>
-  words.filter((w) => !/^[a-z]+$/.test(w)).map((w) => [w, tok] as [string, Tok]),
+  words.filter((w) => !/^[a-z]+$/.test(w)).map((w) => [kanaKey(w), tok] as [string, Tok]),
 ).sort((a, b) => b[0].length - a[0].length);
 const WORD_MAP = new Map<string, Tok>(ALL_DICT.flatMap(([words, tok]) => words.filter((w) => /^[a-z]+$/.test(w)).map((w) => [w, tok] as [string, Tok])));
 
@@ -77,11 +79,7 @@ const IGNORABLE = /[\s、。,.!?・のにをへでとはがもてっマス秒]/;
 
 /** 英語コマンドとして読めるならトークン列、日本語が多すぎるなら null */
 export function tokenizeEnglish(raw: string): Tok[] | null {
-  // 「アポカリプス・メメント・モリ」「ライト ツー」のように、カタカナの間のスペースや「・」は詰めて読む
-  const t = raw
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/([\u30A0-\u30FF])[\s・]+(?=[\u30A0-\u30FF])/g, '$1');
+  const t = normalizeSpeech(raw);
   const toks: Tok[] = [];
   let noise = 0;
   let i = 0;
@@ -114,6 +112,49 @@ export function tokenizeEnglish(raw: string): Tok[] | null {
   const meaningful = toks.filter((x) => x.k !== 'num' && x.k !== 'and').length;
   if (meaningful === 0 || noise > 2) return null;
   return toks;
+}
+
+/**
+ * 音声認識の結果を、辞書と比べられる形にそろえる。
+ * - よく化ける漢字（森→モリ など）を読みに戻す
+ * - ひらがなの連なり（2文字以上）はカタカナにする（1文字の「に」「を」などの助詞はそのまま）
+ * - 辞書に無いアルファベットの単語は、ローマ字として読んでカタカナにする（Wiki → ウィキ）
+ * - カタカナの間のスペースや「・」は詰める（「アポカリプス・メメント・モリ」「ライト ツー」）
+ * - カタカナは「かなのキー」にする（小さい字・伸ばす音・ッ・ヴ の違いを無視）
+ */
+export function normalizeSpeech(raw: string): string {
+  let t = raw.normalize('NFKC').toLowerCase();
+  for (const [k, v] of Object.entries(KANJI_READINGS).sort((a, b) => b[0].length - a[0].length)) t = t.split(k).join(v);
+  t = t.replace(/[\u3041-\u3096ー]{2,}/g, (m) => hiraToKata(m));
+  t = t.replace(/[a-z]+/g, (w) => (WORD_MAP.has(w) ? w : romajiToKata(w) || w));
+  t = t.replace(/([\u30A0-\u30FF])[\s・]+(?=[\u30A0-\u30FF])/g, '$1');
+  return t.replace(/[\u30A0-\u30FF]+/g, (m) => kanaKey(m));
+}
+
+/**
+ * 呪文名に「だいたい」合っていれば、その魔法として読む（聞き間違い・言い間違い対策）。
+ * 漢字が残っている文（日本語の文章）には使わない。キーの長さの3割までの違いを許す。
+ */
+export function fuzzySpell(raw: string): Spell | null {
+  const n = normalizeSpeech(raw);
+  if (/[\u4E00-\u9FFF]/.test(n)) return null;
+  const key = n.replace(/[^\u30A0-\u30FF]/g, '');
+  if (key.length < 4) return null;
+  let best: { k: Element; d: number; len: number } | null = null;
+  for (const k of SPELL_KEYS) {
+    for (const w of ELEMENTS[k].words) {
+      if (/^[a-z]+$/.test(w)) continue;
+      const wk = kanaKey(w);
+      if (wk.length < 4) continue;
+      const d = editDistance(key, wk);
+      if (d <= Math.max(1, Math.floor(wk.length * 0.3)) && (!best || d < best.d)) best = { k, d, len: wk.length };
+    }
+  }
+  if (!best) return null;
+  return {
+    actions: [{ type: 'ATTACK', target: 'ENEMY_CURRENT', cell: null, element: best.k, delayMs: 900 }],
+    reasoning: [`聞き取った「${raw}」を、いちばん近い呪文「${ELEMENTS[best.k].name}」として発動`],
+  };
 }
 
 function splitSegments(toks: Tok[]): Tok[][] {

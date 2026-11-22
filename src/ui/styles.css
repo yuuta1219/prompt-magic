@@ -441,15 +441,239 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; }
 .voice-text { white-space: normal; font-size: 0.85rem; }
 .heard-now { font-size: 1.05rem; color: var(--cyan); font-weight: 700; }
 .heard-last { margin-top: 4px; font-size: 0.75rem; }
-.chip-hint { flex-shrink: 0; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-.examples { align-items: center; }
 .history li { font-size: 0.78rem; padding: 2px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 span.cmd-btn, span.guide-name { cursor: default; }
 
-.special-slot { display: grid; gap: 3px; text-align: center; padding: 8px; border: 2px solid var(--gold); border-radius: 10px; background: radial-gradient(circle at 50% 0%, rgba(255, 209, 102, 0.18), rgba(15, 12, 30, 0.95)); box-shadow: 0 0 18px rgba(255, 209, 102, 0.3); }
 .special-slot.n-far, .special-slot.n-near { opacity: 0.7; }
 .special-slot.n-can { animation: blink 0.8s infinite alternate; }
 .special-slot.n-got { box-shadow: 0 0 26px var(--gold); }
 .special-slot.sel { outline: 2px solid #fff; outline-offset: 2px; }
-.special-h { font-size: 0.7rem; letter-spacing: 0.3em; color: var(--gold); }
-.special-name { font-weight: 700; font-size: 0.85rem; line-height: 1.4; }
+
+.special-dock { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.special-slot { display: inline-flex; gap: 8px; align-items: center; padding: 3px 12px; border: 1px solid rgba(255, 209, 102, 0.4); border-radius: 999px; background: rgba(15, 12, 30, 0.9); font-size: 0.72rem; }
+.special-h { color: var(--gold); letter-spacing: 0.15em; }
+.special-name { font-weight: 700; }
+
+/* ================================================================ 大魔法の全画面演出（魔法ごとに部品・タイトル・揺れ・余韻が違う） */
+.cin-impact, .cin-charge, .cin-after { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.cin-impact { z-index: 100; animation: cin-life var(--dur) ease forwards; }
+@keyframes cin-life { 0% { opacity: 0; } 6% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
+.cin-bg, .cin-layer, .cin-scatter, .cin-lines { position: absolute; inset: 0; }
+.cin-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4vh; text-align: center; }
+.cin-title { font-family: 'Cinzel', serif; font-weight: 700; font-size: clamp(32px, 7.5vw, 124px); line-height: 1; color: #fff; white-space: nowrap; animation: cin-fadein 0.8s ease both; }
+.cin-sub { font-size: clamp(14px, 1.9vw, 26px); letter-spacing: 0.45em; color: #fff; animation: cin-fadein 0.8s 0.5s ease both; }
+.cin-name { font-size: clamp(11px, 1.2vw, 16px); letter-spacing: 0.25em; color: rgba(255, 255, 255, 0.7); animation: cin-fadein 0.8s 0.8s ease both; }
+@keyframes cin-fadein { from { opacity: 0; } to { opacity: 1; } }
+.cin-scatter span { position: absolute; display: block; }
+.cin-lines span { position: absolute; display: block; }
+
+/* 余韻: ゲーム画面の上に薄く残る（勝敗の表示 z-index:5 よりは下） */
+.cin-after { z-index: 4; animation: cin-after-fade var(--dur) ease-in forwards; }
+@keyframes cin-after-fade { from { opacity: 1; } to { opacity: 0; } }
+.cin-after-tint { position: absolute; inset: 0; }
+.cin-scatter.slow span { animation-duration: 5s !important; animation-iteration-count: infinite !important; }
+
+/* 揺れ（重い魔法だけ） */
+.app.cin-shake-light { animation: cin-shake-l 0.12s linear 6; }
+.app.cin-shake-sharp { animation: cin-shake-s 0.06s linear 6; }
+.app.cin-shake-heavy { animation: cin-shake-h 0.09s linear 16; }
+@keyframes cin-shake-l { 50% { transform: translate(2px, -1px); } }
+@keyframes cin-shake-s { 25% { transform: translate(-9px, 3px); } 75% { transform: translate(8px, -4px); } }
+@keyframes cin-shake-h { 25% { transform: translate(-10px, 6px) rotate(-0.4deg); } 50% { transform: translate(9px, -7px); } 75% { transform: translate(-6px, -5px) rotate(0.4deg); } }
+
+/* ---------------------------------------------------------------- フィアト・ノクス: 静かに完全な闇へ。揺れも光の筋も無し */
+.cin-impact.cin-nox { animation: cin-nox-life var(--dur) ease forwards; }
+@keyframes cin-nox-life { 0% { opacity: 0; } 28% { opacity: 1; } 100% { opacity: 1; } }
+.cin-nox .cin-bg { background: #000; }
+.cin-nox .l-stars span { width: 2px; height: 2px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px #fff; opacity: 0; animation: cin-star-die 3.6s ease forwards; }
+@keyframes cin-star-die { 0% { opacity: 0; } 25% { opacity: 0.9; } 55% { opacity: 0.9; } 100% { opacity: 0; transform: scale(0.2); } }
+.cin-nox .cin-title { font-family: 'Cinzel', serif; font-weight: 400; font-style: italic; font-size: clamp(22px, 3.2vw, 46px); letter-spacing: 0.3em; color: #e8e2ff; text-shadow: 0 0 18px rgba(200, 180, 255, 0.6); animation: cin-nox-text var(--dur) ease both; }
+.cin-nox .cin-sub { font-size: clamp(12px, 1.3vw, 18px); color: rgba(230, 225, 255, 0.8); animation: cin-nox-text var(--dur) 0.3s ease both; }
+.cin-nox .cin-name { animation: cin-nox-text var(--dur) 0.5s ease both; }
+@keyframes cin-nox-text { 0%, 38% { opacity: 0; letter-spacing: 0.1em; } 52% { opacity: 1; } 80% { opacity: 1; letter-spacing: 0.4em; } 100% { opacity: 0; letter-spacing: 0.45em; } }
+.cin-after.cin-nox { animation: cin-nox-after var(--dur) ease-in forwards; }
+@keyframes cin-nox-after { 0% { opacity: 1; } 55% { opacity: 0.9; } 100% { opacity: 0; } }
+.cin-after.cin-nox .cin-after-tint { background: #000; }
+.cin-after.cin-nox .l-stars span { width: 2px; height: 2px; background: #fff; opacity: 0.4; animation: cin-twinkle 5s ease infinite; }
+@keyframes cin-twinkle { 50% { opacity: 0.05; } }
+
+/* ---------------------------------------------------------------- ディープブルー: 下から水が満ち、文字が水中で揺らめく */
+.cin-water .cin-bg { background: linear-gradient(to top, #021446, #0a3d9a 55%, #2f8ae0); animation: cin-rise-in 1s cubic-bezier(0.3, 0.8, 0.3, 1) both; }
+@keyframes cin-rise-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.cin-water .l-wave { height: 60px; top: auto; bottom: 100%; background: radial-gradient(ellipse 60px 22px at 50% 100%, #2f8ae0 70%, transparent 72%) 0 0 / 120px 60px repeat-x; animation: cin-rise-wave 1s cubic-bezier(0.3, 0.8, 0.3, 1) both, cin-wave-move 1.6s linear infinite; }
+@keyframes cin-rise-wave { from { transform: translateY(100vh); } to { transform: translateY(60px) translateY(-60px); } }
+@keyframes cin-wave-move { to { background-position: 120px 0; } }
+.cin-water .l-bubbles span { width: calc(var(--s) * 14px); height: calc(var(--s) * 14px); border-radius: 50%; border: 2px solid rgba(200, 240, 255, 0.8); animation: cin-bubble 2.8s ease-in both; }
+@keyframes cin-bubble { from { transform: translateY(40vh); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-50vh); opacity: 0; } }
+.cin-water .cin-title { color: #d8f1ff; text-shadow: 0 0 24px #4fb8ff; animation: cin-fadein 1s 0.6s both, cin-wobble 1.6s ease-in-out infinite; }
+@keyframes cin-wobble { 0%, 100% { transform: skewX(-4deg) translateY(-3px); filter: blur(0.5px); } 50% { transform: skewX(4deg) translateY(3px); filter: blur(1.5px); } }
+.cin-after.cin-water .cin-after-tint { background: repeating-radial-gradient(circle at 30% 40%, rgba(60, 150, 255, 0.18) 0 18px, rgba(20, 60, 160, 0.12) 18px 40px); animation: cin-caustic 4s linear infinite; }
+@keyframes cin-caustic { to { background-position: 120px 80px; } }
+
+/* ---------------------------------------------------------------- ヘルファイア: 炎の壁が噴き上がる、文字が燃える、強い揺れ */
+.cin-fire .cin-bg { background: radial-gradient(circle at 50% 120%, #ffdb4d, #ff4d00 30%, #5a0000 75%, #200000); animation: cin-fire-flash 0.5s ease both; }
+@keyframes cin-fire-flash { 0% { filter: brightness(3); } 100% { filter: brightness(1); } }
+.cin-fire .l-flames { top: auto; height: 70vh; background: radial-gradient(ellipse 12% 100% at 10% 100%, #ffcf40, transparent 70%), radial-gradient(ellipse 14% 90% at 30% 100%, #ff7a00, transparent 70%), radial-gradient(ellipse 12% 100% at 50% 100%, #ffd84d, transparent 70%), radial-gradient(ellipse 14% 85% at 70% 100%, #ff6a00, transparent 70%), radial-gradient(ellipse 12% 100% at 90% 100%, #ffcf40, transparent 70%); transform-origin: bottom; animation: cin-flame-up 0.6s ease-out both, cin-flame-flicker 0.18s ease-in-out infinite alternate; mix-blend-mode: screen; }
+@keyframes cin-flame-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes cin-flame-flicker { from { filter: brightness(1); } to { filter: brightness(1.4) hue-rotate(-8deg); } }
+.cin-fire .l-embers span { width: calc(var(--s) * 4px); height: calc(var(--s) * 4px); background: #ffb347; box-shadow: 0 0 8px #ff5a00; border-radius: 1px; animation: cin-ember 2.2s ease-out both; }
+@keyframes cin-ember { from { transform: translateY(30vh); opacity: 0; } 15% { opacity: 1; } to { transform: translate(4vw, -55vh) rotate(200deg); opacity: 0; } }
+.cin-fire .cin-title { color: #fff1c9; text-shadow: 0 0 10px #ffb000, 0 0 40px #ff3d00, 0 0 90px #ff0000; animation: cin-burn-in 0.5s ease-out both, cin-burn 0.12s steps(2) infinite; }
+@keyframes cin-burn-in { from { transform: scale(1.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes cin-burn { 50% { text-shadow: 0 0 14px #ffd000, 0 0 50px #ff5a00, 0 0 110px #ff1a00; } }
+.cin-after.cin-fire .cin-after-tint { box-shadow: inset 0 0 18vmin rgba(255, 60, 0, 0.55); }
+.cin-after.cin-fire .l-embers span { width: 3px; height: 3px; background: #ffb347; box-shadow: 0 0 6px #ff5a00; animation-name: cin-ember; }
+
+/* ---------------------------------------------------------------- トール: 閃光と稲妻、文字は閃光と同時にパッと出る、短く鋭い揺れ */
+.cin-thunder .cin-bg { animation: cin-thunder-bg var(--dur) steps(1) both; }
+@keyframes cin-thunder-bg { 0% { background: #fff; } 4% { background: #05051e; } 9% { background: #fffbe0; } 12% { background: #05051e; } 26% { background: #fff; } 28%, 100% { background: rgba(5, 5, 30, 0.96); } }
+.cin-thunder .l-bolts span { top: -5%; height: 110%; width: 70px; margin-left: -35px; background: linear-gradient(#fff, #ffe14d); clip-path: polygon(50% 0, 60% 0, 45% 35%, 65% 35%, 35% 70%, 55% 70%, 30% 100%, 42% 62%, 25% 62%, 50% 30%, 32% 30%); filter: drop-shadow(0 0 14px #ffe14d) drop-shadow(0 0 40px #fff6a0); opacity: 0; animation: cin-bolt 0.45s steps(1) 3; }
+.cin-thunder .l-bolts span:nth-child(1) { left: 15%; animation-delay: 0s; }
+.cin-thunder .l-bolts span:nth-child(2) { left: 35%; animation-delay: 0.22s; transform: scaleX(-1); }
+.cin-thunder .l-bolts span:nth-child(3) { left: 55%; animation-delay: 0.1s; }
+.cin-thunder .l-bolts span:nth-child(4) { left: 72%; animation-delay: 0.35s; transform: scaleX(-1); }
+.cin-thunder .l-bolts span:nth-child(5) { left: 88%; animation-delay: 0.6s; }
+@keyframes cin-bolt { 0% { opacity: 1; } 30% { opacity: 0; } }
+.cin-thunder .cin-title { color: #fffbd0; text-shadow: 0 0 16px #ffe14d, 0 0 60px #ffcc00; animation: cin-snap 0.01s 0.26s both; }
+@keyframes cin-snap { from { opacity: 0; } to { opacity: 1; } }
+.cin-thunder .cin-sub, .cin-thunder .cin-name { animation-delay: 0.3s; }
+.cin-after.cin-thunder .cin-after-tint { animation: cin-afterflash 3.5s steps(1) both; }
+@keyframes cin-afterflash { 0%, 100% { background: transparent; } 22% { background: rgba(255, 250, 200, 0.35); } 24% { background: transparent; } 55% { background: rgba(255, 250, 200, 0.2); } 56% { background: transparent; } }
+
+/* ---------------------------------------------------------------- アブソリュート・ゼロ: 縁から霜、ひび、文字が1文字ずつ凍りつく */
+.cin-ice .cin-bg { background: radial-gradient(circle, rgba(220, 248, 255, 0.55), rgba(40, 110, 180, 0.9)); animation: cin-fadein 1s both; }
+.cin-ice .l-frost { animation: cin-frost 3s ease-out both; }
+@keyframes cin-frost { from { box-shadow: inset 0 0 0 0 rgba(245, 253, 255, 0.95); } to { box-shadow: inset 0 0 26vmin 9vmin rgba(245, 253, 255, 0.95); } }
+.cin-ice .l-cracks span, .cin-earth .l-cracks span { left: 50%; top: 50%; height: 3px; width: 70vmax; transform-origin: left center; background: linear-gradient(90deg, #fff, rgba(255, 255, 255, 0)); animation: cin-crack 0.5s ease-out both; }
+.cin-lines.l-cracks span:nth-child(1) { --a: 8deg; animation-delay: 1s; }
+.cin-lines.l-cracks span:nth-child(2) { --a: 67deg; animation-delay: 1.08s; }
+.cin-lines.l-cracks span:nth-child(3) { --a: 131deg; animation-delay: 1.15s; }
+.cin-lines.l-cracks span:nth-child(4) { --a: 188deg; animation-delay: 1.03s; }
+.cin-lines.l-cracks span:nth-child(5) { --a: 246deg; animation-delay: 1.12s; }
+.cin-lines.l-cracks span:nth-child(6) { --a: 305deg; animation-delay: 1.2s; }
+@keyframes cin-crack { from { transform: rotate(var(--a)) scaleX(0); } to { transform: rotate(var(--a)) scaleX(1); } }
+.cin-ice .l-snow span { width: calc(var(--s) * 5px); height: calc(var(--s) * 5px); border-radius: 50%; background: #fff; animation: cin-snowfall 3s linear both; }
+@keyframes cin-snowfall { from { transform: translateY(-40vh); opacity: 0; } 15% { opacity: 1; } to { transform: translate(3vw, 40vh); opacity: 0.7; } }
+.cin-title.t-ice { color: #eaffff; text-shadow: 0 0 18px #bff4ff, 0 0 50px #4fb8ff; animation: none; }
+.cin-title.t-ice span { display: inline-block; animation: cin-freeze-letter 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+@keyframes cin-freeze-letter { from { transform: translateY(-50px); opacity: 0; filter: blur(8px); } to { transform: none; opacity: 1; filter: blur(0); } }
+.cin-ice .cin-sub { animation-delay: 1.6s; }
+.cin-ice .cin-name { animation-delay: 1.9s; }
+.cin-after.cin-ice .cin-after-tint { box-shadow: inset 0 0 22vmin 7vmin rgba(240, 252, 255, 0.85); }
+.cin-after.cin-ice .l-snow span { width: 3px; height: 3px; border-radius: 50%; background: #fff; animation-name: cin-snowfall; }
+
+/* ---------------------------------------------------------------- テンペスト: 3本の斬撃、文字は横から吹き抜ける */
+.cin-wind .cin-bg { background: linear-gradient(110deg, rgba(4, 40, 30, 0.92), rgba(20, 90, 70, 0.9)); animation: cin-fadein 0.3s both; }
+.cin-wind .l-slashes span { left: -20%; top: 50%; width: 140%; height: 4px; background: linear-gradient(90deg, transparent, #e0fff0 45%, #fff 50%, #e0fff0 55%, transparent); box-shadow: 0 0 18px #9dffd0; transform: translateX(-100%) rotate(-24deg); animation: cin-slash 0.45s ease-out both; }
+.cin-wind .l-slashes span:nth-child(1) { margin-top: -18vh; animation-delay: 0.1s; }
+.cin-wind .l-slashes span:nth-child(2) { margin-top: 0; animation-delay: 0.3s; transform: translateX(-100%) rotate(18deg); }
+.cin-wind .l-slashes span:nth-child(3) { margin-top: 18vh; animation-delay: 0.5s; }
+@keyframes cin-slash { from { translate: -100% 0; opacity: 1; } to { translate: 100% 0; opacity: 0.2; } }
+.cin-wind .cin-title { color: #eafff5; text-shadow: 0 0 20px #7dffc4; animation: cin-gust var(--dur) cubic-bezier(0.2, 0.9, 0.2, 1) both; }
+@keyframes cin-gust { 0%, 20% { transform: translateX(-80vw) skewX(-25deg); opacity: 0; } 35% { transform: none; opacity: 1; } 82% { transform: translateX(2vw); opacity: 1; } 100% { transform: translateX(80vw) skewX(25deg); opacity: 0; } }
+.cin-after.cin-wind .cin-after-tint { background: repeating-linear-gradient(-20deg, transparent 0 40px, rgba(160, 255, 210, 0.12) 40px 42px); animation: cin-streak 1.2s linear infinite; }
+@keyframes cin-streak { to { background-position: 200px 0; } }
+
+/* ---------------------------------------------------------------- エンド・オブ・ジ・アース: 地割れ、土ぼこり、文字が落ちてきて弾む、強い揺れ */
+.cin-earth .cin-bg { background: radial-gradient(circle, #7a4a20, #2a1606 70%, #120800); animation: cin-fadein 0.2s both; }
+.cin-earth .l-cracks span { height: 7px; background: linear-gradient(90deg, #ff9b3d, #3a1d05 30%, rgba(20, 10, 0, 0)); box-shadow: 0 0 10px rgba(255, 140, 50, 0.8); }
+.cin-earth .l-cracks span:nth-child(n) { animation-delay: 0.15s; }
+.cin-earth .l-dust span { width: calc(var(--s) * 9px); height: calc(var(--s) * 9px); background: #8a6038; border-radius: 2px; animation: cin-dust 2.6s ease-in both; }
+@keyframes cin-dust { from { transform: translateY(-30vh) rotate(0); opacity: 0; } 15% { opacity: 1; } to { transform: translateY(45vh) rotate(260deg); opacity: 0; } }
+.cin-earth .cin-title { color: #ffe2bf; text-shadow: 0 6px 0 #3a1d05, 0 0 30px #ff9b3d; animation: cin-drop 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes cin-drop { from { transform: translateY(-70vh); } to { transform: none; } }
+.cin-after.cin-earth .cin-after-tint { background: rgba(110, 70, 30, 0.22); backdrop-filter: sepia(0.6); }
+.cin-after.cin-earth .l-dust span { width: 4px; height: 4px; background: #8a6038; animation-name: cin-dust; }
+
+/* ---------------------------------------------------------------- サンクチュアリ: 天から光が差し込む、文字はふわっと */
+.cin-holy .cin-bg { background: radial-gradient(circle at 50% 0%, #fff, rgba(255, 236, 170, 0.92) 45%, rgba(170, 120, 30, 0.85)); animation: cin-fadein 1.2s both; }
+.cin-holy .l-heaven { background: linear-gradient(90deg, transparent 8%, rgba(255, 255, 255, 0.75) 12%, transparent 16%, transparent 30%, rgba(255, 255, 255, 0.6) 35%, transparent 40%, transparent 55%, rgba(255, 255, 255, 0.8) 60%, transparent 65%, transparent 80%, rgba(255, 255, 255, 0.6) 85%, transparent 90%); filter: blur(6px); transform-origin: top; animation: cin-beam 1.4s ease-out both; }
+@keyframes cin-beam { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+.cin-holy .l-motes span, .cin-deus .l-motes span, .cin-veni .l-motes span { width: calc(var(--s) * 5px); height: calc(var(--s) * 5px); border-radius: 50%; background: #fff4c2; box-shadow: 0 0 10px #ffd166; animation: cin-mote 3s ease-out both; }
+@keyframes cin-mote { from { transform: translateY(20vh); opacity: 0; } 30% { opacity: 1; } to { transform: translateY(-30vh); opacity: 0; } }
+.cin-holy .cin-title { color: #fffbe8; text-shadow: 0 0 30px #fff, 0 0 70px #ffd166; animation: cin-soft 1.6s 0.4s ease both; }
+@keyframes cin-soft { from { opacity: 0; filter: blur(14px); transform: scale(1.06); } to { opacity: 1; filter: blur(0); transform: none; } }
+.cin-holy .cin-sub, .cin-holy .cin-name { color: #5a3d00; }
+.cin-after.cin-holy .cin-after-tint { background: radial-gradient(circle at 50% 0%, rgba(255, 245, 200, 0.35), transparent 70%); }
+.cin-after .l-motes span { width: 4px; height: 4px; border-radius: 50%; background: #fff4c2; box-shadow: 0 0 8px #ffd166; animation-name: cin-mote; }
+
+/* ---------------------------------------------------------------- アポカリプス: 赤黒い空、灰、文字は叩きつけるように、強い揺れ */
+.cin-apoc .cin-bg { background: linear-gradient(#1a0000, #6e0a05 55%, #c2410c); animation: cin-apoc-flash 0.5s 0.15s both; }
+@keyframes cin-apoc-flash { 0% { filter: brightness(1); } 10% { filter: brightness(3); } 100% { filter: brightness(1); } }
+.cin-apoc .l-ash span, .cin-after.cin-apoc .l-ash span { width: calc(var(--s) * 5px); height: calc(var(--s) * 3px); background: rgba(70, 60, 60, 0.9); animation: cin-ashfall 3s linear both; }
+@keyframes cin-ashfall { from { transform: translateY(-45vh) rotate(0); opacity: 0; } 10% { opacity: 1; } to { transform: translate(-6vw, 45vh) rotate(220deg); opacity: 0.6; } }
+.cin-apoc .cin-title { font-size: clamp(40px, 10vw, 170px); letter-spacing: 0.12em; color: #ffe0d6; text-shadow: 0 0 20px #ff2a00, 0 0 70px #8b0000; animation: cin-slam 0.35s 0.15s cubic-bezier(0.6, 0, 0.9, 0.4) both; }
+@keyframes cin-slam { from { transform: scale(3.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.cin-after.cin-apoc .cin-after-tint { background: linear-gradient(rgba(80, 0, 0, 0.35), rgba(200, 60, 10, 0.15)); }
+
+/* ---------------------------------------------------------------- メメント・モリ: 色が抜け、時計の針、細い文字 */
+.cin-mori .cin-bg { background: radial-gradient(circle, rgba(30, 30, 30, 0.5), rgba(0, 0, 0, 0.92)); backdrop-filter: grayscale(1) contrast(1.2); animation: cin-fadein 1s both; }
+.cin-mori .l-clock { inset: auto; left: 50%; top: 50%; width: 52vmin; height: 52vmin; margin: -26vmin 0 0 -26vmin; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.35); background: conic-gradient(from 0deg, rgba(255, 255, 255, 0.5) 0 1deg, transparent 1deg 30deg, rgba(255, 255, 255, 0.5) 30deg 31deg, transparent 31deg 60deg, rgba(255, 255, 255, 0.5) 60deg 61deg, transparent 61deg 90deg, rgba(255, 255, 255, 0.5) 90deg 91deg, transparent 91deg 120deg, rgba(255, 255, 255, 0.5) 120deg 121deg, transparent 121deg 150deg, rgba(255, 255, 255, 0.5) 150deg 151deg, transparent 151deg 180deg, rgba(255, 255, 255, 0.5) 180deg 181deg, transparent 181deg 210deg, rgba(255, 255, 255, 0.5) 210deg 211deg, transparent 211deg 240deg, rgba(255, 255, 255, 0.5) 240deg 241deg, transparent 241deg 270deg, rgba(255, 255, 255, 0.5) 270deg 271deg, transparent 271deg 300deg, rgba(255, 255, 255, 0.5) 300deg 301deg, transparent 301deg 330deg, rgba(255, 255, 255, 0.5) 330deg 331deg, transparent 331deg 360deg); -webkit-mask: radial-gradient(circle, transparent 92%, #000 93%); mask: radial-gradient(circle, transparent 92%, #000 93%); animation: cin-fadein 1s both; }
+.cin-mori .l-clock::after { content: ''; position: absolute; left: 50%; top: 50%; width: 2px; height: 46%; margin-left: -1px; background: rgba(255, 255, 255, 0.8); transform-origin: top; transform: rotate(180deg); animation: cin-hand 3s steps(12) both; }
+.cin-mori .l-clock { -webkit-mask: none; mask: none; }
+@keyframes cin-hand { from { transform: rotate(180deg); } to { transform: rotate(540deg); } }
+.cin-mori .cin-title { font-weight: 400; font-style: italic; letter-spacing: 0.25em; font-size: clamp(28px, 5vw, 80px); color: #eee; text-shadow: 0 0 20px rgba(255, 255, 255, 0.4); animation: cin-fadein 1.4s 0.6s both; }
+.cin-after.cin-mori .cin-after-tint { backdrop-filter: grayscale(1); background: rgba(0, 0, 0, 0.15); }
+
+/* ---------------------------------------------------------------- カオス: 色ずれとノイズ、文字がぶれる、弱い揺れ */
+.cin-chaos .cin-bg { animation: cin-chaos-bg var(--dur) steps(1) both; }
+@keyframes cin-chaos-bg { 0% { background: #2a0050; } 8% { background: #ffcc55; } 14% { background: #0a0018; } 22% { background: #6a00c8; } 30% { background: #ffcc55; } 36%, 100% { background: rgba(20, 0, 40, 0.95); } }
+.cin-chaos .l-glitch { background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(255, 0, 200, 0.25) 22px 26px, transparent 26px 60px, rgba(0, 255, 255, 0.2) 60px 63px); animation: cin-glitch-bands 0.25s steps(3) infinite; mix-blend-mode: screen; }
+@keyframes cin-glitch-bands { 33% { transform: translate(-12px, 7px); } 66% { transform: translate(10px, -9px); } }
+.cin-chaos .cin-title { color: #fff; animation: cin-fadein 0.1s both, cin-rgb 0.16s steps(2) infinite; }
+@keyframes cin-rgb { 0% { text-shadow: 7px 0 #ff00ff, -7px 0 #00ffff; transform: translateX(-3px); } 50% { text-shadow: -7px 0 #ff00ff, 7px 0 #00ffff; transform: translateX(3px) skewX(6deg); } }
+.cin-after.cin-chaos .cin-after-tint { background: repeating-linear-gradient(0deg, transparent 0 40px, rgba(255, 0, 200, 0.15) 40px 43px); animation: cin-glitch-bands 0.4s steps(2) infinite; }
+
+/* ---------------------------------------------------------------- デウス・エクス・マキナ: 金の歯車、文字が光とともに降りてくる */
+.cin-deus .cin-bg { background: radial-gradient(circle, rgba(120, 80, 10, 0.88), rgba(20, 12, 0, 0.95)); animation: cin-fadein 0.6s both; }
+.cin-deus .l-gears span { left: 50%; top: 50%; border-radius: 50%; border: 10px dashed rgba(255, 210, 110, 0.75); box-shadow: 0 0 20px rgba(255, 200, 80, 0.4); }
+.cin-deus .l-gears span:nth-child(1) { width: 60vmin; height: 60vmin; margin: -30vmin 0 0 -30vmin; animation: cin-gear 6s linear infinite; }
+.cin-deus .l-gears span:nth-child(2) { width: 34vmin; height: 34vmin; margin: -48vmin 0 0 14vmin; animation: cin-gear 4s linear infinite reverse; }
+.cin-deus .l-gears span:nth-child(3) { width: 26vmin; height: 26vmin; margin: 12vmin 0 0 -46vmin; animation: cin-gear 3s linear infinite reverse; }
+@keyframes cin-gear { to { transform: rotate(360deg); } }
+.cin-deus .cin-title { color: #fff1c4; text-shadow: 0 0 24px #ffd166, 0 0 60px #b8860b; animation: cin-descend 1.4s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes cin-descend { from { transform: translateY(-45vh); opacity: 0; filter: blur(6px); } to { transform: none; opacity: 1; filter: blur(0); } }
+.cin-after.cin-deus .cin-after-tint { background: radial-gradient(circle, rgba(255, 210, 110, 0.15), transparent 70%); }
+
+/* ---------------------------------------------------------------- ウェニー・ウィディー・ウィキー: 3語が1語ずつ打ち込まれる */
+.cin-veni .cin-bg { background: radial-gradient(circle, rgba(120, 20, 20, 0.85), rgba(30, 0, 0, 0.92)); animation: cin-fadein 0.3s both; }
+.cin-title.t-veni { display: flex; gap: 0.5em; animation: none; color: #ffe9a8; text-shadow: 0 0 20px #ffd166, 0 0 60px #b8860b; }
+.cin-title.t-veni span { display: inline-block; animation: cin-stamp 0.35s cubic-bezier(0.6, 0, 0.9, 0.4) both; }
+@keyframes cin-stamp { from { transform: scale(2.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.cin-veni .cin-sub { animation-delay: 1.4s; }
+.cin-veni .cin-name { animation-delay: 1.6s; }
+.cin-after.cin-veni .cin-after-tint { box-shadow: inset 0 0 14vmin rgba(255, 209, 102, 0.35); }
+
+/* ---------------------------------------------------------------- 詠唱中: 警告テープ・暗くなる画面・呪文名が浮かぶ */
+.cin-charge { z-index: 90; --c1: 255, 255, 255; }
+.cin-charge-dim { position: absolute; inset: 0; background: rgba(0, 0, 0, calc(var(--cp) * 0.6)); }
+.cin-charge-edge { position: absolute; inset: 0; box-shadow: inset 0 0 calc(40px + var(--cp) * 120px) rgba(var(--c1), calc(0.3 + var(--cp) * 0.6)); animation: cin-edge 0.4s ease-in-out infinite alternate; }
+@keyframes cin-edge { to { filter: brightness(1.6); } }
+.cin-tape { position: absolute; left: 0; right: 0; height: 34px; overflow: hidden; display: flex; align-items: center; background: repeating-linear-gradient(45deg, #ffd000 0 18px, #111 18px 36px); box-shadow: 0 0 20px rgba(255, 200, 0, 0.6); }
+.cin-tape.top { top: 0; }
+.cin-tape.bottom { bottom: 0; }
+.cin-tape span { white-space: nowrap; font-weight: 900; font-size: 15px; letter-spacing: 0.2em; color: #fff; background: rgba(0, 0, 0, 0.75); padding: 2px 0; animation: cin-marquee 6s linear infinite; }
+.cin-tape.bottom span { animation-direction: reverse; }
+@keyframes cin-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.cin-chant { position: absolute; left: 0; right: 0; top: 12vh; text-align: center; font-size: clamp(22px, 3.6vw, 52px); font-weight: 900; letter-spacing: 0.15em; color: #fff; text-shadow: 0 0 16px rgba(var(--c1), 1), 0 0 40px rgba(var(--c1), 0.8), 0 0 3px #000; }
+.cin-caret { animation: cin-blink 0.4s steps(2) infinite; }
+@keyframes cin-blink { 50% { opacity: 0; } }
+.cin-charge.cin-nox { --c1: 170, 110, 255; }
+.cin-charge.cin-nox .cin-charge-dim { background: rgba(0, 0, 0, calc(var(--cp) * 0.85)); }
+.cin-charge.cin-water { --c1: 80, 160, 255; }
+.cin-charge.cin-fire { --c1: 255, 110, 30; }
+.cin-charge.cin-thunder { --c1: 255, 230, 80; }
+.cin-charge.cin-ice { --c1: 180, 240, 255; }
+.cin-charge.cin-wind { --c1: 120, 255, 190; }
+.cin-charge.cin-earth { --c1: 220, 150, 80; }
+.cin-charge.cin-holy { --c1: 255, 230, 150; }
+.cin-charge.cin-apoc { --c1: 255, 60, 40; }
+.cin-charge.cin-mori { --c1: 220, 220, 220; }
+.cin-charge.cin-chaos { --c1: 220, 90, 255; }
+.cin-charge.cin-deus { --c1: 255, 210, 110; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app[class*='cin-shake'] { animation: none; }
+  .cin-impact *, .cin-charge *, .cin-after * { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
+}
+.elite-tag { margin-left: 8px; font-size: 0.72rem; color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; padding: 0 8px; text-shadow: 0 0 8px rgba(255, 209, 102, 0.6); }

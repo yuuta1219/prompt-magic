@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { SKILLS, SKILL_BY_ID, TOTAL_SP, TREE_SIZE, canUnlock, spForWin, stageStats, type SkillDef } from '../game/skills';
+import { SKILLS, SKILL_BY_ID, TOTAL_SP, TREE_SIZE, canUnlock, spForWin, specialRemaining, stageStats, type SkillDef } from '../game/skills';
 import { ELEMENTS, type SpellKey } from '../game/elements';
 import type { Progress } from '../game/progress';
 
@@ -47,7 +47,7 @@ export function SkillTree({
           <span className="tree-title">スキルツリー</span>
           <span className="tree-sp">SP <b>{progress.sp}</b></span>
           <span className="muted">
-            ステージ{progress.stage}（敵HP {next.enemyHp}）／ {progress.wins}勝 {progress.losses}敗 ／ 習得 {spent}/{TOTAL_SP} SP
+            ステージ{progress.stage}{next.elite ? '・強敵' : ''}（敵HP {next.enemyHp}）／ {progress.wins}勝 {progress.losses}敗 ／ 習得 {spent}/{TOTAL_SP} SP
           </span>
           <button className="tree-close" onClick={onClose}>{inBattle ? '閉じて戦闘に戻る' : '閉じる'}</button>
         </header>
@@ -79,18 +79,8 @@ export function SkillTree({
           </div>
           </div>
           <aside className="tree-detail">
-            {SKILLS.filter((s) => s.special).map((s) => {
-              const rest = SKILLS.filter((x) => !x.special && !unlocked.has(x.id)).length;
-              return (
-                <button key={s.id} className={`special-slot n-${state(s)} ${selected === s.id ? 'sel' : ''}`} onClick={() => { setSelected(s.id); setMsg(null); }}>
-                  <div className="special-h">✦ 特別枠 ✦</div>
-                  <div className="special-name">{unlocked.has(s.id) || rest === 0 ? s.name : '？？？？？'}</div>
-                  <div className="muted">{unlocked.has(s.id) ? '習得済み' : rest === 0 ? `${s.cost} SP で解放できる` : `ほかのスキルをすべて解放すると現れる（残り${rest}個）`}</div>
-                </button>
-              );
-            })}
             <div className={`td-kind br-${sel.branch}`}>{KIND_JA[sel.kind]}</div>
-            <div className="td-name">{sel.name}</div>
+            <div className="td-name">{sel.special && !unlocked.has(sel.id) && !chk.ok ? '？？？' : sel.name}</div>
             {sel.incantation && <div className="td-inc">唱え方: <code>{sel.incantation}</code></div>}
             <p className="td-desc">{sel.desc}</p>
             {spell && (
@@ -100,7 +90,7 @@ export function SkillTree({
                 <div className="muted">{spell.combo}</div>
               </div>
             )}
-            {sel.special && <div className="muted">前提: ほかのスキル101個をすべて解放</div>}
+            {sel.special && <div className="muted">前提: {sel.needCount ? `スキルを${sel.needCount}個覚える` : 'ほかのスキルをすべて解放'}</div>}
             {sel.requires.length > 0 && <div className="muted">前提: {sel.requires.map((r) => SKILL_BY_ID.get(r)!.name).join(sel.requiresAll ? ' ＋ ' : ' / ')}{sel.requiresAll ? '（両方）' : ''}</div>}
             {unlocked.has(sel.id) ? (
               <div className="good">✔ 習得済み</div>
@@ -127,6 +117,18 @@ export function SkillTree({
             </button>
           </aside>
         </div>
+        <footer className="special-dock">
+          {SKILLS.filter((s) => s.special).map((s) => {
+            const rest = specialRemaining(s, unlocked);
+            return (
+              <button key={s.id} className={`special-slot n-${state(s)} ${selected === s.id ? 'sel' : ''}`} onClick={() => { setSelected(s.id); setMsg(null); }}>
+                <span className="special-h">✦ 特別枠</span>
+                <span className="special-name">{unlocked.has(s.id) || rest === 0 ? s.name : '？？？'}</span>
+                <span className="muted">{unlocked.has(s.id) ? '習得済み' : rest === 0 ? `${s.cost} SP` : `あと${rest}個`}</span>
+              </button>
+            );
+          })}
+        </footer>
       </div>
     </div>
   );

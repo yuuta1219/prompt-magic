@@ -155,6 +155,19 @@ export class MagicEngine {
   attack(a: AttackAction, chainIndex = 0): void {
     const s = this.s;
     const def = ELEMENTS[a.element];
+    if (def.oncePerBattle) {
+      if (s.usedOnce.has(a.element)) {
+        s.log('error', `${def.name}は1回の戦闘で1度しか使えない`);
+        return;
+      }
+      s.usedOnce.add(a.element);
+    }
+    if (def.effects && 'selfBuff' in def.effects && def.effects.selfBuff) {
+      s.attackBuff = Math.max(s.attackBuff, def.effects.selfBuff);
+      s.log('magic', `★ ${def.name}！ この戦闘のあいだ攻撃力が${def.effects.selfBuff}倍になった`);
+      s.cinematic(a.element);
+      return;
+    }
     const delayMs = a.delayMs + chainIndex * ELEMENT_RULES.CHAIN_STAGGER_MS;
     const resolveAt = s.time + delayMs;
     let center: Vec;
@@ -174,7 +187,7 @@ export class MagicEngine {
     const cells = this.cellsFor(a.element, center, resolveAt);
     const lo = s.loadout;
     const baseDamage = a.element === 'fire' ? lo.fireDamage : def.damage;
-    const damage = Math.round(baseDamage * lo.branchDmg[def.branch] * (a.boost ? lo.boostMult : 1));
+    const damage = Math.round(baseDamage * lo.branchDmg[def.branch] * (a.boost ? lo.boostMult : 1) * s.attackBuff);
     const boostNote = a.boost ? `【パワー×${lo.boostMult}】` : '';
     const label = a.element === 'water' && lo.waterSize === 5 ? '5×5' : def.shapeLabel;
     const totalDelay = delayMs + (def.delayExtraMs ?? 0);
