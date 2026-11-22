@@ -168,14 +168,14 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; }
   background: rgba(255, 50, 80, calc(0.12 + var(--p) * 0.55));
   border-color: rgba(255, 90, 110, calc(0.3 + var(--p) * 0.7));
   box-shadow: inset 0 0 calc(var(--p) * 14px) rgba(255, 60, 90, 0.9);
-  animation: pulse 0.5s infinite alternate;
 }
+.cell.danger.owner-enemy::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: rgba(255, 140, 160, 0.28); animation: pulse 0.5s infinite alternate; pointer-events: none; }
 .cell.danger.owner-player {
   background: rgba(80, 220, 255, calc(0.1 + var(--p) * 0.45));
   border-color: rgba(120, 230, 255, calc(0.3 + var(--p) * 0.7));
   box-shadow: inset 0 0 calc(var(--p) * 12px) rgba(79, 227, 255, 0.9);
 }
-@keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+@keyframes pulse { from { opacity: 0; } to { opacity: 1; } }
 .countdown { position: absolute; font-size: 0.6rem; font-family: 'JetBrains Mono', monospace; color: #fff; opacity: 0.85; }
 
 .cell.fx { animation: boom 0.6s ease-out; }
@@ -203,7 +203,7 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; }
 .cell.wet::after { content: '💧'; position: absolute; right: 1px; top: -1px; font-size: calc(var(--cell) * 0.28); opacity: 0.8; }
 /* 凍結 */
 .unit.frozen { filter: hue-rotate(160deg) saturate(0.6) brightness(1.3); outline: 2px solid #dff6ff; outline-offset: 1px; animation: none; box-shadow: 0 0 16px #bfefff; }
-@keyframes boom { from { transform: scale(1.25); filter: brightness(2); } to { transform: scale(1); filter: brightness(1); } }
+@keyframes boom { from { transform: translateZ(calc(var(--cell) * 0.5)) scale(1.25); box-shadow: 0 0 24px #fff; } to { transform: translateZ(0) scale(1); box-shadow: none; } }
 
 .unit {
   width: 78%;
@@ -677,3 +677,106 @@ span.cmd-btn, span.guide-name { cursor: default; }
   .cin-impact *, .cin-charge *, .cin-after * { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
 }
 .elite-tag { margin-left: 8px; font-size: 0.72rem; color: var(--gold); border: 1px solid var(--gold); border-radius: 999px; padding: 0 8px; text-shadow: 0 0 8px rgba(255, 209, 102, 0.6); }
+
+/* ------------------------------------------------ 3D の戦場（プレイヤーの後ろ上から見下ろす） */
+/* 注意: 3D の中の要素に filter / overflow:hidden / opacity<1 を付けると、子が平たくつぶれる */
+.fields {
+  --tilt: 42deg;
+  perspective: 1500px;
+  perspective-origin: 50% 100%;
+  padding: 6px 24px 18px;
+  overflow: visible;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 100%, rgba(79, 227, 255, 0.10), transparent 70%),
+    radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255, 77, 109, 0.10), transparent 70%),
+    rgba(10, 8, 22, 0.6);
+}
+.stage3d {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+  transform: rotateX(var(--tilt));
+  /* 傾けると縦が縮むぶん、上の余白を詰める */
+  margin-top: calc(var(--cell) * -8.6);
+}
+@media (min-width: 1001px) {
+  /* 傾けて縦に余裕ができたので、盤面を少し大きく */
+  .fields { --cell: min(3.7vh, 50px); }
+}
+.board {
+  transform-style: preserve-3d;
+  position: relative;
+  /* 石の台座っぽい厚み */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+.board::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 10px;
+  transform: translateZ(-14px);
+  background: linear-gradient(180deg, #1b1533, #0b0817);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.board-enemy::before { box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 77, 109, 0.18); }
+.board-player::before { box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(79, 227, 255, 0.18); }
+.cell {
+  transform-style: preserve-3d;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease-out;
+}
+/* 攻撃が来るマスは、着弾が近いほど少し浮き上がる */
+.cell.danger { transform: translateZ(calc(var(--p, 0) * 4px)); }
+/* 境界は床に光る線 */
+.rift { transform: translateZ(1px); text-shadow: 0 0 8px rgba(199, 125, 255, 0.8); }
+
+/* キャラの立ち絵: 床と逆向きに起こして、カメラの方を向かせる */
+.unit-stand {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: 45%;
+  height: 170%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transform-origin: 50% 100%;
+  transform: translateZ(1px) rotateX(calc(var(--tilt) * -1));
+  pointer-events: none;
+  z-index: 3;
+}
+/* 縦長のカプセル型にして「立っている」感じを出す */
+.unit-stand .unit {
+  width: 78%;
+  height: 100%;
+  border-radius: 46% 46% 38% 38%;
+  font-size: calc(var(--cell) * 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.unit-stand .unit-player { background: linear-gradient(180deg, #e6fdff, var(--player) 45%, #0b5a70); }
+.unit-stand .unit-enemy { background: linear-gradient(180deg, #ffe0e6, var(--enemy) 45%, #5a0b1e); }
+/* 足元の影 */
+.cell.occupied::after {
+  content: '';
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 30%;
+  bottom: 18%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.6), transparent 70%);
+  pointer-events: none;
+}
+.cell.occ-player::after { background: radial-gradient(ellipse, rgba(79, 227, 255, 0.55), rgba(0, 0, 0, 0.5) 45%, transparent 72%); }
+.cell.occ-enemy::after { background: radial-gradient(ellipse, rgba(255, 77, 109, 0.55), rgba(0, 0, 0, 0.5) 45%, transparent 72%); }
+/* 敵はふわふわ浮く（影はそのまま） */
+.unit-enemy { animation: hover3d 1.4s ease-in-out infinite alternate; }
+@keyframes hover3d { from { transform: translateY(-2px); } to { transform: translateY(-9px); } }
+
+/* 残り秒数も起こして読みやすく */
+.countdown { transform-style: preserve-3d; inset: 0; display: flex; align-items: center; justify-content: center; }
+.countdown > span { display: block; transform: translateZ(2px) rotateX(calc(var(--tilt) * -1)); text-shadow: 0 0 4px #000, 0 0 2px #000; font-weight: 700; }

@@ -205,11 +205,14 @@ export function App() {
         </div>
 
         <div className="fields">
-          <Board s={s} side="enemy" />
-          <div className="rift">
-            <span>— 境界 —</span>
+          {/* 3D の床。プレイヤーの後ろ上から見下ろす（奥が敵、手前が自分） */}
+          <div className="stage3d">
+            <Board s={s} side="enemy" />
+            <div className="rift">
+              <span>— 境界 —</span>
+            </div>
+            <Board s={s} side="player" />
           </div>
-          <Board s={s} side="player" />
           {paused && <div className="overlay"><div className="overlay-box">一時停止中<br /><small>Esc で再開</small></div></div>}
           {s.phase !== 'battle' && impact?.phase !== 'impact' && (
             <div className="overlay">

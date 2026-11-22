@@ -39,6 +39,7 @@ export function Board({ s, side }: { s: BattleState; side: Side }) {
         row.map((cell, x) => {
           const here = me.pos.x === x && me.pos.y === y;
           const cls = ['cell'];
+          if (here) cls.push('occupied', `occ-${side}`);
           if (side === 'enemy' && s.isWet({ x, y })) cls.push('wet');
           if (cell.danger) cls.push('danger', `owner-${cell.danger.owner}`, `el-${cell.danger.element}`);
           if (cell.fx) cls.push('fx', `el-${cell.fx.element}`, cell.fx.hit ? 'fx-hit' : '');
@@ -48,11 +49,14 @@ export function Board({ s, side }: { s: BattleState; side: Side }) {
           return (
             <div key={`${x}-${y}`} className={cls.join(' ')} style={style} title={`(${x},${y})`}>
               {cell.danger && cell.danger.progress > 0.55 && !here && (
-                <span className="countdown">{(cell.danger.remainMs / 1000).toFixed(1)}</span>
+                <span className="countdown"><span>{(cell.danger.remainMs / 1000).toFixed(1)}</span></span>
               )}
               {here && (
-                <div className={`unit unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}>
-                  {side === 'player' ? '◆' : '✶'}
+                // 立ち絵（盤面を傾けても、キャラだけはカメラの方を向いて立つ）
+                <div className="unit-stand">
+                  <div className={`unit unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}>
+                    {side === 'player' ? '◆' : '✶'}
+                  </div>
                 </div>
               )}
             </div>
