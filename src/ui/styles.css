@@ -935,3 +935,76 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .chant-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .chant-info .chant-text { text-align: left; }
 .chant-charging .chant-heard { font-size: 1.15rem; }
+
+/* ------------------------------------------------ 左の列 = 詠唱の枠（上に敵、まんなかに魔法陣、下に自分） */
+.battle-row { grid-template-columns: minmax(240px, 290px) minmax(0, 1fr); }
+@media (min-width: 1001px) { .arena { --cell: min(7.4vh, 4.3vw, 80px); } }
+.battle-row > .chant { justify-content: space-between; align-items: stretch; gap: 10px; padding: 12px 14px; }
+.battle-row > .chant .hud { width: 100%; }
+.chant-middle { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0; }
+.battle-row .chant-circle { width: min(100%, 220px, 28vh); height: auto; aspect-ratio: 1; }
+.battle-row .chant-mic { font-size: 0.85rem; bottom: 2%; }
+.battle-row .chant-info { flex: 0; width: 100%; align-items: center; }
+.battle-row .chant-info .chant-text { text-align: center; }
+.battle-row .heard-last { text-align: center; font-size: 0.72rem; }
+@media (max-width: 1000px) {
+  .battle-row > .chant { display: contents; }
+  .battle-row > .chant .hud-enemy { order: -1; }
+  .battle-row > .chant .chant-middle { order: 2; flex-direction: row; padding: 8px; border: 1px solid var(--line-strong); border-radius: 10px; }
+  .battle-row .chant-circle { width: 96px; }
+  .battle-row > .chant .hud-player { order: 1; }
+}
+@media (max-width: 1000px) {
+  .battle-row { grid-template-columns: minmax(0, 1fr); }
+  .battle-row .chant-info { flex: 1; align-items: flex-start; }
+  .battle-row .chant-info .chant-text, .battle-row .heard-last { text-align: left; }
+}
+
+/* ------------------------------------------------ 詠唱の枠と戦場をひとつの舞台にして、唱えると全体が光る */
+.battle-row {
+  --glow: 169, 139, 255;
+  position: relative;
+  gap: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: rgba(10, 8, 22, 0.6);
+  box-shadow: inset 0 0 40px rgba(80, 50, 180, 0.15);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+.battle-row > .chant, .battle-row > .fields { border: none; border-radius: 0; box-shadow: none; }
+.battle-row > .chant { background: linear-gradient(90deg, rgba(var(--glow), 0.06), transparent); border-right: 1px solid rgba(var(--glow), 0.2); }
+.battle-row > .fields { background: transparent; }
+/* 舞台のふちを流れる光 */
+.battle-row::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: 0 0 0 1px rgba(var(--glow), 0.9), 0 0 30px rgba(var(--glow), 0.6), inset 0 0 60px rgba(var(--glow), 0.25);
+  z-index: 1;
+}
+.battle-row.bs-idle::before { opacity: 0.25; }
+.battle-row.bs-charging { --glow: 127, 232, 255; }
+.battle-row.bs-charging::before { animation: stage-charge 1.6s ease-in forwards, stage-flicker 0.35s 1.6s ease-in-out infinite alternate; }
+.battle-row.bs-fire { --glow: 255, 209, 102; }
+.battle-row.bs-fire::before { animation: stage-fire 1.9s ease-out forwards; }
+.battle-row.bs-fizzle { --glow: 255, 77, 109; }
+.battle-row.bs-fizzle::before { animation: stage-fizzle 0.9s ease-out forwards; }
+/* 唱えている間、舞台の床もうっすら明るくなる */
+.battle-row.bs-charging > .fields { background: radial-gradient(ellipse 60% 50% at 50% 60%, rgba(127, 232, 255, 0.12), transparent 70%); transition: background 1s; }
+.battle-row.bs-fire > .fields { animation: stage-floor-fire 1.2s ease-out; }
+@keyframes stage-charge { from { opacity: 0.2; } to { opacity: 1; } }
+@keyframes stage-flicker { from { opacity: 0.85; } to { opacity: 1; } }
+@keyframes stage-fire {
+  0% { opacity: 1; box-shadow: 0 0 0 2px rgba(255, 240, 200, 1), 0 0 80px rgba(255, 209, 102, 1), inset 0 0 160px rgba(255, 209, 102, 0.6); }
+  100% { opacity: 0; }
+}
+@keyframes stage-fizzle { 0% { opacity: 0.9; } 30% { opacity: 0.2; } 45% { opacity: 0.7; } 100% { opacity: 0; } }
+@keyframes stage-floor-fire { from { background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255, 209, 102, 0.3), transparent 70%); } to { background: transparent; } }
+@media (max-width: 1000px) {
+  .battle-row { border: none; background: none; box-shadow: none; }
+  .battle-row > .fields { border: 1px solid var(--line); border-radius: 10px; }
+}

@@ -210,8 +210,18 @@ export function App() {
         </header>
 
         {/* 戦場: 左に敵と自分のHP、右に3Dの盤面 */}
-        <div className="battle-row">
-          <div className="hud-col">
+        <div className={`battle-row bs-${chantFx ? (chantFx.ok ? 'fire' : 'fizzle') : speech.interim ? 'charging' : speech.listening ? 'idle' : 'off'}`}>
+          {/* 左の列はまるごと詠唱の枠。上に敵、下に自分、そのあいだに大きな魔法陣（押すと音声 ON/OFF） */}
+          <ChantPanel
+            supported={speech.supported}
+            listening={speech.listening}
+            interim={speech.interim}
+            error={speech.error}
+            lastHeard={lastHeard}
+            fx={chantFx}
+            onToggle={() => (speech.listening ? speech.stop() : speech.start())}
+            top={
+              <>
         {/* 敵HUD */}
         <div className="hud hud-enemy">
           <div className="hud-name">✶ 古代術式体 <span className="muted">ステージ{s.stage}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
@@ -229,6 +239,10 @@ export function App() {
           </div>
         </div>
 
+              </>
+            }
+            bottom={
+              <>
         {/* プレイヤーHUD */}
         <div className="hud hud-player">
           <div className="hud-row">
@@ -250,7 +264,9 @@ export function App() {
           )}
         </div>
 
-          </div>
+              </>
+            }
+          />
         <div className="fields">
           {/* 3D の床。プレイヤーの後ろ上から見下ろす（奥が敵、手前が自分） */}
           <div className="stage3d">
@@ -279,16 +295,6 @@ export function App() {
 
         </div>
 
-        {/* 魔法陣（ここが音声の ON/OFF も兼ねる）。唱えると魔力がたまる */}
-        <ChantPanel
-          supported={speech.supported}
-          listening={speech.listening}
-          interim={speech.interim}
-          error={speech.error}
-          lastHeard={lastHeard}
-          fx={chantFx}
-          onToggle={() => (speech.listening ? speech.stop() : speech.start())}
-        />
         {toast && <div className="toast">{toast}</div>}
       </main>
 

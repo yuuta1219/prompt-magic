@@ -5,7 +5,7 @@
  *   聞き取った途中の言葉も魔法陣の下に出る。
  * - CastBanner（戦場の上）: 言葉が確定したら、唱えた呪文を大きく出して「発動」。読めなかったら「不発」。
  */
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 
 export interface ChantFx {
   id: number;
@@ -25,6 +25,8 @@ export function ChantPanel({
   lastHeard,
   fx,
   onToggle,
+  top,
+  bottom,
 }: {
   supported: boolean;
   listening: boolean;
@@ -33,6 +35,9 @@ export function ChantPanel({
   lastHeard: string | null;
   fx: ChantFx | null;
   onToggle: () => void;
+  /** 枠の上と下に入れるもの（敵と自分のHP） */
+  top?: ReactNode;
+  bottom?: ReactNode;
 }) {
   // 話し始めた時刻を覚えて、話している長さでたまり具合を決める（画面は毎フレーム描き直される）
   const startedAt = useRef<number | null>(null);
@@ -45,10 +50,18 @@ export function ChantPanel({
   const circ = 2 * Math.PI * R;
 
   if (!supported) {
-    return <section className="chant chant-off"><span className="muted">このブラウザは音声入力に対応していない（Chrome / Edge / Safari で使える）</span></section>;
+    return (
+      <section className="chant chant-off">
+        {top}
+        <span className="muted chant-middle">このブラウザは音声入力に対応していない（Chrome / Edge / Safari で使える）</span>
+        {bottom}
+      </section>
+    );
   }
   return (
     <section className={`chant chant-${state}`} style={{ '--charge': charge } as React.CSSProperties} aria-label="詠唱">
+      {top}
+      <div className="chant-middle">
       {/* 魔法陣そのものが音声の ON/OFF ボタン */}
       <button className="chant-circle" onClick={onToggle} title="押すと音声入力の ON / OFF。ONの間はずっと聞き取り、話して少し間が空くと詠唱される">
         <svg viewBox="0 0 140 140" aria-hidden>
@@ -74,6 +87,8 @@ export function ChantPanel({
         </div>
         {lastHeard && !interim && <div className="muted heard-last">聞き取った候補（【】が使ったもの）: {lastHeard}</div>}
       </div>
+      </div>
+      {bottom}
     </section>
   );
 }
