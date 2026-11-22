@@ -11,7 +11,7 @@ import { ELEMENTS, type SpellKey } from '../game/elements';
 import { computeLoadout, spForWin, STAGE } from '../game/skills';
 import { useSpeech } from './useSpeech';
 import { CastBanner, ChantPanel, type ChantFx } from './Chant';
-import { CostPanel, HarnessPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
+import { CostPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
 
 
 const HISTORY_KEY = 'prompt-magic.history';
@@ -311,10 +311,7 @@ export function App() {
             <Section title="魔力消費内訳">
               <CostPanel entry={lastEntry} />
             </Section>
-            <Section title="自律術式（ハーネス）">
-              <HarnessPanel s={s} />
-            </Section>
-            <Section title="戦闘ログ">
+                <Section title="戦闘ログ">
               <LogPanel s={s} />
             </Section>
             <Section title="詠唱履歴" right={history.length > 0 ? <button className="btn-mini" onClick={() => { setHistory([]); saveHistory([]); }}>消去</button> : undefined}>

@@ -2,10 +2,11 @@ import { GRID_SIZE } from '../game/constants';
 import { ELEMENTS } from '../game/elements';
 import type { BattleState } from '../game/BattleState';
 import type { Side } from '../game/types';
+import { Vfx } from './Vfx';
 
 interface CellInfo {
   danger: { progress: number; owner: Side; element: string; remainMs: number } | null;
-  fx: { element: string; hit: boolean } | null;
+  fx: { element: string; hit: boolean; id: number } | null;
 }
 
 export function Board({ s, side }: { s: BattleState; side: Side }) {
@@ -27,7 +28,7 @@ export function Board({ s, side }: { s: BattleState; side: Side }) {
   }
   for (const f of s.fx) {
     if (f.field !== side) continue;
-    for (const c of f.cells) cells[c.y][c.x].fx = { element: f.element, hit: f.hit };
+    for (const c of f.cells) cells[c.y][c.x].fx = { element: f.element, hit: f.hit, id: f.id };
   }
 
   const shielded = me.shield !== null;
@@ -51,6 +52,7 @@ export function Board({ s, side }: { s: BattleState; side: Side }) {
               {cell.danger && cell.danger.progress > 0.55 && !here && (
                 <span className="countdown"><span>{(cell.danger.remainMs / 1000).toFixed(1)}</span></span>
               )}
+              {cell.fx && <Vfx key={cell.fx.id} element={cell.fx.element} />}
               {here && (
                 // 立ち絵（盤面を傾けても、キャラだけはカメラの方を向いて立つ）
                 <div className="unit-stand">

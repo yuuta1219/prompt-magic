@@ -23,7 +23,8 @@ import type { PendingAttack, SpellEntry } from './types';
 export type InterpretationResult = { ok: true; spell: unknown } | { ok: false; error: string };
 export type CastResult = { ok: true; entryId: number } | { ok: false; error: string };
 
-const FX_LIFETIME_MS = 600;
+/** 着弾エフェクトを出しておく時間（魔法ごとの演出が終わるまで） */
+const FX_LIFETIME_MS = 1100;
 
 export class GameEngine {
   s: BattleState;
