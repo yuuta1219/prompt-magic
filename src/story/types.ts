@@ -4,6 +4,8 @@ export interface StoryLine {
   /** 話している人。空文字なら効果音、省略ならナレーションの中央表示 */
   who?: string;
   text: string;
+  /** 一緒に鳴らす効果音（【効果音】の言葉から決まる） */
+  sfx?: 'lighter' | 'splash' | 'rumble' | 'clank';
 }
 
 export interface StoryPage {

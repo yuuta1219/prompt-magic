@@ -4,6 +4,7 @@
  */
 import { ELEMENTS, SPELL_KEYS, type SpellKey } from '../game/elements';
 import { SKILLS } from '../game/skills';
+import { VOICE_CREDIT } from '../story/credit';
 
 const PLAY_URL = 'play/';
 const BASIC: SpellKey[] = ['water', 'fire', 'thunder', 'ice', 'wind', 'earth'];
@@ -148,7 +149,10 @@ export function Landing() {
         </p>
       </section>
 
-      <footer className="lp-foot">PROMPT MAGIC</footer>
+      <footer className="lp-foot">
+        PROMPT MAGIC
+        <div className="lp-credit">{VOICE_CREDIT}</div>
+      </footer>
     </div>
   );
 }

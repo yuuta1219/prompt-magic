@@ -117,3 +117,4 @@ a { color: inherit; }
 .lp-story-row b { color: var(--gold); }
 .lp-story-wide { margin-top: 18px; }
 @media (max-width: 700px) { .lp-story-row { grid-template-columns: 1fr; } }
+.lp-credit { margin-top: 8px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 0; font-size: 0.7rem; opacity: 0.8; }
