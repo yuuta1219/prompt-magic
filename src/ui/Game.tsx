@@ -54,14 +54,14 @@ export function Game() {
     setScreen({
       k: 'story',
       scene: chapterBefore(c),
-      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, label: `チャプター${c.no} ${c.title}` } }),
+      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, label: `チャプター${c.no} ${c.title}` } }),
     });
 
   const startFree = () => {
     const p = progressRef.current;
     if (p.stage < FREE_FIRST_STAGE) setProgress({ ...p, stage: FREE_FIRST_STAGE });
     const stage = Math.max(p.stage, FREE_FIRST_STAGE);
-    setScreen({ k: 'battle', id: ++battleId.current, spec: { kind: 'free', stage, enemy: '古代術式体', label: '修練場' } });
+    setScreen({ k: 'battle', id: ++battleId.current, spec: { kind: 'free', stage, enemy: '古代術式体', enemySprite: 'ancient', label: '修練場' } });
   };
 
   const leaveBattle = (won: boolean) => {

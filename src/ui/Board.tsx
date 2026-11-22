@@ -9,7 +9,12 @@ interface CellInfo {
   fx: { element: string; hit: boolean; id: number } | null;
 }
 
-export function Board({ s, side }: { s: BattleState; side: Side }) {
+/** 戦闘キャラの画像（public/units/）。ゲームは /play/ にあるのでひとつ上 */
+const UNIT_BASE = '../units/';
+/** 読み込めなかった画像（そのときは丸いカプセルで代わりに出す） */
+const brokenSprites = new Set<string>();
+
+export function Board({ s, side, sprite }: { s: BattleState; side: Side; sprite?: string }) {
   const me = side === 'player' ? s.player : s.enemy;
   const cells: CellInfo[][] = Array.from({ length: GRID_SIZE }, () =>
     Array.from({ length: GRID_SIZE }, () => ({ danger: null, fx: null })),
@@ -56,9 +61,19 @@ export function Board({ s, side }: { s: BattleState; side: Side }) {
               {here && (
                 // 立ち絵（盤面を傾けても、キャラだけはカメラの方を向いて立つ）
                 <div className="unit-stand">
-                  <div className={`unit unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}>
-                    {side === 'player' ? '◆' : '✶'}
-                  </div>
+                  {sprite && !brokenSprites.has(sprite) ? (
+                    <img
+                      className={`unit-sprite unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}
+                      src={`${UNIT_BASE}${sprite}.png`}
+                      alt=""
+                      draggable={false}
+                      onError={() => brokenSprites.add(sprite)}
+                    />
+                  ) : (
+                    <div className={`unit unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}>
+                      {side === 'player' ? '◆' : '✶'}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

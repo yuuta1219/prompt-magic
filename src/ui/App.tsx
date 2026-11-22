@@ -40,7 +40,12 @@ export interface BattleSpec {
   enemy: string;
   /** 画面に出す見出し（「チャプター1 粗大ゴミ」など） */
   label: string;
+  /** 敵の画像（public/units/ の下、拡張子なし） */
+  enemySprite?: string;
 }
+
+/** 主人公の画像 */
+const PLAYER_SPRITE = 'yanikawa';
 
 /** 戦闘画面。ストーリーのマップ（Game.tsx）から開く */
 export function App({
@@ -305,11 +310,11 @@ export function App({
         <div className="fields">
           {/* 3D の床。プレイヤーの後ろ上から見下ろす（奥が敵、手前が自分） */}
           <div className="stage3d">
-            <Board s={s} side="enemy" />
+            <Board s={s} side="enemy" sprite={battle.enemySprite} />
             <div className="rift">
               <span>— 境界 —</span>
             </div>
-            <Board s={s} side="player" />
+            <Board s={s} side="player" sprite={PLAYER_SPRITE} />
           </div>
           {chantFx && <CastBanner key={chantFx.id} fx={chantFx} />}
           {paused && <div className="overlay"><div className="overlay-box">一時停止中<br /><small>Esc で再開</small></div></div>}

@@ -90,6 +90,7 @@ export const EPISODE1: Episode = {
       title: '粗大ゴミ',
       stage: 1,
       enemy: '清掃術式体',
+      sprite: 'cleaner',
       thumb: 'ep1/03-cleaner',
       before: [
         {
@@ -137,6 +138,7 @@ export const EPISODE1: Episode = {
       title: '利用規約',
       stage: 2,
       enemy: '巡回術式体',
+      sprite: 'patrol',
       thumb: 'ep1/02-wet',
       before: [
         {
@@ -168,6 +170,7 @@ export const EPISODE1: Episode = {
       title: '812年もののエナドリ',
       stage: 3,
       enemy: '自販機型術式体',
+      sprite: 'vending',
       thumb: 'ep1/04-vending',
       before: [
         {
@@ -217,6 +220,7 @@ export const EPISODE1: Episode = {
       title: '本番環境',
       stage: 4,
       enemy: '記録保管術式体',
+      sprite: 'archive',
       thumb: 'ep1/05-log',
       before: [
         {
@@ -273,6 +277,7 @@ export const EPISODE1: Episode = {
       title: '最後の門',
       stage: 5,
       enemy: '門番術式体ケルベロス',
+      sprite: 'cerberus',
       thumb: 'ep1/06-gate',
       before: [
         {

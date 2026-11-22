@@ -32,6 +32,8 @@ export interface Chapter {
   /** 戦闘の強さ（ステージ番号と同じ強さになる。5の倍数は強敵） */
   stage: number;
   enemy: string;
+  /** 戦闘での敵の画像（public/units/ の下、拡張子なし） */
+  sprite?: string;
   /** マスの絵（public/story/ の下、拡張子なし） */
   thumb?: string;
   /** 戦闘の前に流す紙芝居 */
