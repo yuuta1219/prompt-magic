@@ -699,12 +699,9 @@ span.cmd-btn, span.guide-name { cursor: default; }
   transform-origin: 50% 100%;
   transform: rotateX(var(--tilt));
   /* 傾けると縦が縮むぶん、上の余白を詰める */
-  margin-top: calc(var(--cell) * -8.6);
+  margin-top: calc(var(--cell) * -9.5);
 }
-@media (min-width: 1001px) {
-  /* 傾けて縦に余裕ができたので、盤面を少し大きく */
-  .fields { --cell: min(3.7vh, 50px); }
-}
+
 .board {
   transform-style: preserve-3d;
   position: relative;
@@ -780,3 +777,140 @@ span.cmd-btn, span.guide-name { cursor: default; }
 /* 残り秒数も起こして読みやすく */
 .countdown { transform-style: preserve-3d; inset: 0; display: flex; align-items: center; justify-content: center; }
 .countdown > span { display: block; transform: translateZ(2px) rotateX(calc(var(--tilt) * -1)); text-shadow: 0 0 4px #000, 0 0 2px #000; font-weight: 700; }
+
+/* ------------------------------------------------ 戦闘画面を主役にするレイアウト（左右の情報は引き出し） */
+.app { grid-template-columns: minmax(0, 1fr); max-width: 1100px; }
+@media (min-width: 1001px) {
+  /* 画面の高さに合わせて盤面を大きく */
+  .arena { --cell: min(5.3vh, 64px); }
+}
+.arena .hud { width: min(100%, calc(var(--cell) * 9 + 160px)); }
+.arena .hud-name { font-size: 1.1rem; }
+.arena .bar { height: 22px; }
+.arena .bar .bar-label { font-size: 0.82rem; }
+.arena .bar.thin-mana { height: 16px; }
+.fields { width: min(100%, calc(var(--cell) * 9 + 220px)); }
+.controls button.on { border-color: var(--accent); box-shadow: 0 0 12px rgba(169, 139, 255, 0.5); }
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 30;
+  width: min(400px, 92vw);
+  max-height: none;
+  overflow-y: auto;
+  padding: 12px 14px 20px;
+  background: rgba(12, 10, 26, 0.97);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.7);
+  transition: transform 0.25s ease-out, visibility 0.25s;
+  visibility: hidden;
+}
+.drawer.open { visibility: visible; transform: translateX(0); }
+.drawer-left { left: 0; transform: translateX(-105%); }
+.drawer-right { right: 0; transform: translateX(105%); }
+.drawer.side { position: fixed; top: 0; max-height: none; }
+.drawer .guide { position: static; max-height: none; overflow: visible; }
+.drawer-close { align-self: flex-end; margin-left: auto; display: block; margin-bottom: 8px; }
+.drawer-backdrop { position: fixed; inset: 0; z-index: 29; background: rgba(5, 3, 12, 0.45); }
+@media (max-width: 1000px) {
+  .title-bar { flex-wrap: wrap; row-gap: 6px; }
+  .subtitle { display: none; }
+  .controls { margin-left: 0; flex-wrap: wrap; flex-shrink: 1; }
+}
+@media (max-width: 1000px) {
+  :root { --cell: min(7.6vw, 36px); }
+  .app { padding: 6px 10px; }
+  .fields { padding: 6px 8px 14px; }
+  .stage3d { margin-top: calc(var(--cell) * -8.2); }
+  .voice-row { width: 100%; box-sizing: border-box; }
+}
+
+/* ------------------------------------------------ メイン7 : 右3 */
+.app { grid-template-columns: minmax(0, 7fr) minmax(320px, 3fr); max-width: 1700px; }
+@media (max-width: 1000px) { .app { grid-template-columns: 1fr; } }
+.fields { padding-top: calc(var(--cell) * 0.9); }
+
+/* ------------------------------------------------ 詠唱の魔法陣（右の列） */
+.chant {
+  --cc: var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 40%, rgba(169, 139, 255, calc(0.08 + var(--charge) * 0.25)), rgba(12, 10, 26, 0.9) 70%);
+  transition: box-shadow 0.2s;
+}
+.chant-charging { --cc: #7fe8ff; box-shadow: 0 0 calc(10px + var(--charge) * 30px) rgba(127, 232, 255, calc(0.2 + var(--charge) * 0.5)); }
+.chant-fire { --cc: var(--gold); box-shadow: 0 0 40px rgba(255, 209, 102, 0.7); }
+.chant-fizzle { --cc: #777; }
+.chant-off { opacity: 0.7; }
+.chant-circle { position: relative; width: 150px; height: 150px; }
+.chant-circle svg { width: 100%; height: 100%; overflow: visible; }
+.cc-base { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 6; }
+.cc-fill { fill: none; stroke: var(--cc); stroke-width: 6; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 70px 70px; transition: stroke-dashoffset 0.12s linear; filter: drop-shadow(0 0 6px var(--cc)); }
+.cc-rune { fill: none; stroke: var(--cc); stroke-width: 1.2; opacity: calc(0.25 + var(--charge) * 0.75); transform-origin: 70px 70px; animation: cc-spin 14s linear infinite; }
+.chant-charging .cc-rune { animation-duration: 2.5s; }
+.chant-fire .cc-rune { opacity: 1; animation-duration: 0.8s; }
+.chant-fizzle .cc-rune { animation: cc-fizzle 0.5s ease-out forwards; }
+.cc-core { fill: var(--cc); opacity: calc(0.25 + var(--charge) * 0.75); filter: drop-shadow(0 0 10px var(--cc)); transition: r 0.12s linear; }
+@keyframes cc-spin { to { transform: rotate(360deg); } }
+@keyframes cc-fizzle { 0% { transform: rotate(0) scale(1); } 30% { transform: rotate(8deg) scale(1.04); } 100% { transform: rotate(-4deg) scale(0.9); opacity: 0.15; } }
+.chant-burst { position: absolute; inset: 10%; border-radius: 50%; border: 3px solid var(--gold); animation: chant-burst 0.7s ease-out forwards; pointer-events: none; }
+@keyframes chant-burst { from { transform: scale(0.6); opacity: 1; box-shadow: 0 0 30px var(--gold); } to { transform: scale(1.8); opacity: 0; } }
+.chant-text { min-height: 1.6em; font-size: 0.95rem; text-align: center; word-break: break-all; }
+.chant-heard { color: #bff4ff; font-weight: 700; }
+.chant-ok { color: var(--gold); font-weight: 900; letter-spacing: 0.3em; text-shadow: 0 0 12px var(--gold); }
+.chant-ng { color: #aaa; }
+.chant-mana { position: relative; width: 100%; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.chant-mana-fill { height: 100%; background: linear-gradient(90deg, #2c2a8f, var(--mana), #9fb0ff); transition: width 0.2s; }
+.chant-mana span { position: absolute; inset: 0; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; }
+
+/* ------------------------------------------------ 戦場に出る「唱えた呪文」 */
+.cast-banner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42%;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  animation: cast-banner 1.9s ease-out forwards;
+}
+.cast-banner-text {
+  font-size: clamp(1.4rem, 4.2vh, 2.6rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 4px 28px;
+  max-width: 90%;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(90deg, transparent, rgba(10, 8, 22, 0.85) 15%, rgba(10, 8, 22, 0.85) 85%, transparent);
+}
+.cast-banner.ok .cast-banner-text { text-shadow: 0 0 14px var(--gold), 0 0 30px rgba(255, 209, 102, 0.7); }
+.cast-banner-sub { font-family: 'Cinzel', 'Noto Sans JP', serif; letter-spacing: 0.4em; font-size: 0.95rem; margin-top: 2px; }
+.cast-banner.ok .cast-banner-sub { color: var(--gold); }
+.cast-banner.ng .cast-banner-text { color: #bbb; text-decoration: line-through rgba(255, 77, 109, 0.8); }
+.cast-banner.ng .cast-banner-sub { color: var(--enemy); }
+@keyframes cast-banner {
+  0% { opacity: 0; transform: scale(1.6); filter: blur(6px); }
+  12% { opacity: 1; transform: scale(1); filter: blur(0); }
+  75% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.05) translateY(-14px); }
+}
+.cast-banner.ng { animation-name: cast-banner-ng; }
+@keyframes cast-banner-ng {
+  0% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; transform: translateX(-8px); }
+  16% { transform: translateX(8px); }
+  22% { transform: translateX(-4px); }
+  28% { transform: translateX(0); }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}

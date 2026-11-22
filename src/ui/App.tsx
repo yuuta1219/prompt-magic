@@ -9,6 +9,7 @@ import { AfterOverlay, ChargeOverlay, ImpactOverlay, chargingUltimate, shakeClas
 import { applyDevGrant, applyResult, loadProgress, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
 import { computeLoadout, spForWin, STAGE } from '../game/skills';
 import { useSpeech } from './useSpeech';
+import { CastBanner, ChantPanel, type ChantFx } from './Chant';
 import { CostPanel, HarnessPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
 
 
@@ -52,6 +53,13 @@ export function App() {
   const [history, setHistory] = useState<string[]>(loadHistory);
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
+  /** 左右の情報パネルはボタンで開く引き出しにする（戦闘画面を大きく見せるため） */
+  const [drawer, setDrawer] = useState<'guide' | null>(null);
+  /** 唱えた結果の演出（発動 / 不発） */
+  const [chantFx, setChantFx] = useState<ChantFx | null>(null);
+  const chantId = useRef(0);
+  const drawerRef = useRef(drawer);
+  drawerRef.current = drawer;
   const speedRef = useRef(speed);
   const pausedRef = useRef(paused);
   speedRef.current = speed;
@@ -88,6 +96,10 @@ export function App() {
     const t = raw.trim().slice(0, SPELL_LIMITS.MAX_INPUT_CHARS);
     if (!t) return;
     const r = engine.cast(t);
+    const id = ++chantId.current;
+    const recognized = interpretSpell(t).actions.some((a) => a.type !== 'NOOP');
+    setChantFx(r.ok && recognized ? { id, text: t, ok: true } : { id, text: t, ok: false, reason: r.ok ? '呪文として読めなかった' : r.error });
+    setTimeout(() => setChantFx((x) => (x?.id === id ? null : x)), 1900);
     if (!r.ok) {
       flash(r.error);
       return;
@@ -98,6 +110,8 @@ export function App() {
       return next;
     });
   };
+  // 開発中だけ: コンソールから window.__cast('ファイア') で唱えたことにできる（音声なしで演出を確かめる用）
+  if (import.meta.env.DEV) (window as unknown as { __cast?: (t: string) => void }).__cast = castText;
   // ---- 呪文は音声だけで唱える（文字の入力欄は無い）。ONの間ずっと聞き取る
   const [lastHeard, setLastHeard] = useState<string | null>(null);
   const speech = useSpeech((heard, alternatives) => {
@@ -118,7 +132,10 @@ export function App() {
 
   useEffect(() => {
     const onGlobalKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPaused((p) => !p);
+      if (e.key !== 'Escape') return;
+      // 引き出しが開いていたら、まず閉じる
+      if (drawerRef.current) setDrawer(null);
+      else setPaused((p) => !p);
     };
     window.addEventListener('keydown', onGlobalKey);
     return () => window.removeEventListener('keydown', onGlobalKey);
@@ -146,7 +163,11 @@ export function App() {
       {impact?.phase !== 'impact' && chargeKey && casting?.castStartAt !== undefined && casting.castEndAt !== undefined && (
         <ChargeOverlay keyName={chargeKey} progress={Math.min(1, (s.time - casting.castStartAt) / Math.max(1, casting.castEndAt - casting.castStartAt))} />
       )}
-      <ElementGuide loadout={loadout} />
+      {drawer && <div className="drawer-backdrop" onClick={() => setDrawer(null)} />}
+      <div className={`drawer drawer-left ${drawer === 'guide' ? 'open' : ''}`} aria-hidden={drawer !== 'guide'}>
+        <button className="drawer-close" onClick={() => setDrawer(null)}>✕ 閉じる</button>
+        <ElementGuide loadout={loadout} />
+      </div>
       {treeOpen && (
         <SkillTree
           progress={progress}
@@ -181,6 +202,7 @@ export function App() {
                 <option value={1}>1x</option>
               </select>
             </label>
+            <button className={drawer === 'guide' ? 'on' : ''} onClick={() => setDrawer((d) => (d === 'guide' ? null : 'guide'))}>📖 呪文の書</button>
             <button onClick={() => setPaused((p) => !p)}>{paused ? '▶ 再開' : '⏸ 一時停止'}</button>
             <button onClick={restart}>↻ 再戦</button>
             <button className={`tree-btn ${progress.sp > 0 ? 'has-sp' : ''}`} onClick={() => setTreeOpen(true)}>🌳 スキル（SP {progress.sp}）</button>
@@ -213,6 +235,7 @@ export function App() {
             </div>
             <Board s={s} side="player" />
           </div>
+          {chantFx && <CastBanner key={chantFx.id} fx={chantFx} />}
           {paused && <div className="overlay"><div className="overlay-box">一時停止中<br /><small>Esc で再開</small></div></div>}
           {s.phase !== 'battle' && impact?.phase !== 'impact' && (
             <div className="overlay">
@@ -279,6 +302,7 @@ export function App() {
       </main>
 
       <aside className="side">
+        <ChantPanel listening={speech.listening} interim={speech.interim} fx={chantFx} mana={s.mana.current} manaMax={s.mana.max} />
         <Section title="詠唱キュー">
           <QueuePanel s={s} onCancel={(id) => engine.cancelSpell(id)} />
         </Section>
