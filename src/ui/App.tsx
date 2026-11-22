@@ -209,6 +209,9 @@ export function App() {
           </div>
         </header>
 
+        {/* 戦場: 左に敵と自分のHP、右に3Dの盤面 */}
+        <div className="battle-row">
+          <div className="hud-col">
         {/* 敵HUD */}
         <div className="hud hud-enemy">
           <div className="hud-name">✶ 古代術式体 <span className="muted">ステージ{s.stage}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
@@ -226,6 +229,28 @@ export function App() {
           </div>
         </div>
 
+        {/* プレイヤーHUD */}
+        <div className="hud hud-player">
+          <div className="hud-row">
+            <div className="hud-name">◆ 詠唱者 <span className="muted">YOU</span></div>
+            <div className="status-icons">
+              {s.player.shield && <span className="chip shield">🛡 障壁 {Math.round(s.player.shield.reduction * 100)}% {((s.player.shield.until - s.time) / 1000).toFixed(1)}s</span>}
+              {s.reactiveWard && <span className="chip ward">✧ 反応障壁 待機</span>}
+              {s.attackBuff > 1 && <span className="chip ward">⚔ 攻撃力×{s.attackBuff}</span>}
+              {s.harnesses.map((h) => <span key={h.id} className="chip harness-chip">⚙ {h.spec.name}</span>)}
+            </div>
+          </div>
+          <Bar value={s.player.hp} max={s.player.maxHp} kind="hp-player" label={`HP ${s.player.hp}/${s.player.maxHp}`} />
+          <Bar value={s.mana.current} max={s.mana.max} kind="mana" label={`魔力 ${Math.floor(s.mana.current)}/${s.mana.max}（+${s.mana.regenPerSec}/秒）`} />
+          {/* 詠唱バーは常に場所を取っておく（出たり消えたりで画面がずれないように） */}
+          {casting && casting.castStartAt !== undefined && casting.castEndAt !== undefined ? (
+            <Bar value={s.time - casting.castStartAt} max={Math.max(1, casting.castEndAt - casting.castStartAt)} kind="cast" label={`詠唱中: ${casting.text}`} />
+          ) : (
+            <Bar value={0} max={1} kind="cast idle" label="詠唱なし" />
+          )}
+        </div>
+
+          </div>
         <div className="fields">
           {/* 3D の床。プレイヤーの後ろ上から見下ろす（奥が敵、手前が自分） */}
           <div className="stage3d">
@@ -252,57 +277,22 @@ export function App() {
           )}
         </div>
 
-        {/* プレイヤーHUD */}
-        <div className="hud hud-player">
-          <div className="hud-row">
-            <div className="hud-name">◆ 詠唱者 <span className="muted">YOU</span></div>
-            <div className="status-icons">
-              {s.player.shield && <span className="chip shield">🛡 障壁 {Math.round(s.player.shield.reduction * 100)}% {((s.player.shield.until - s.time) / 1000).toFixed(1)}s</span>}
-              {s.reactiveWard && <span className="chip ward">✧ 反応障壁 待機</span>}
-              {s.attackBuff > 1 && <span className="chip ward">⚔ 攻撃力×{s.attackBuff}</span>}
-              {s.harnesses.map((h) => <span key={h.id} className="chip harness-chip">⚙ {h.spec.name}</span>)}
-            </div>
-          </div>
-          <Bar value={s.player.hp} max={s.player.maxHp} kind="hp-player" label={`HP ${s.player.hp}/${s.player.maxHp}`} />
-          <Bar value={s.mana.current} max={s.mana.max} kind="mana" label={`魔力 ${Math.floor(s.mana.current)}/${s.mana.max}（+${s.mana.regenPerSec}/秒）`} />
-          {/* 詠唱バーは常に場所を取っておく（出たり消えたりで画面がずれないように） */}
-          {casting && casting.castStartAt !== undefined && casting.castEndAt !== undefined ? (
-            <Bar value={s.time - casting.castStartAt} max={Math.max(1, casting.castEndAt - casting.castStartAt)} kind="cast" label={`詠唱中: ${casting.text}`} />
-          ) : (
-            <Bar value={0} max={1} kind="cast idle" label="詠唱なし" />
-          )}
         </div>
 
-        <div className="voice-row">
-          {speech.supported ? (
-            <>
-              <button
-                className={`mic-btn ${speech.listening ? 'on' : ''}`}
-                onClick={() => (speech.listening ? speech.stop() : speech.start())}
-                title="ONの間はずっと聞き取る。話して少し間が空くと詠唱される"
-              >
-                🎙 音声 {speech.listening ? 'ON' : 'OFF'}
-              </button>
-              <div className="voice-text">
-                {speech.listening ? (
-                  speech.interim ? <span className="heard-now">「{speech.interim}」</span> : <span>聞き取り中… 呪文を唱えて、少し間を空けると発動</span>
-                ) : speech.error ? (
-                  <span className="bad">{speech.error}</span>
-                ) : (
-                  <span className="muted">呪文は声で唱える。🎙 を押して ON にしよう（音声はブラウザの音声認識で文字にする。Chrome では Google のサーバーに送られる）</span>
-                )}
-                {lastHeard && !speech.interim && <div className="muted heard-last">聞き取った候補（【】が使ったもの）: {lastHeard}</div>}
-              </div>
-            </>
-          ) : (
-            <span className="muted">このブラウザは音声入力に対応していない（Chrome / Edge / Safari で使える）</span>
-          )}
-        </div>
+        {/* 魔法陣（ここが音声の ON/OFF も兼ねる）。唱えると魔力がたまる */}
+        <ChantPanel
+          supported={speech.supported}
+          listening={speech.listening}
+          interim={speech.interim}
+          error={speech.error}
+          lastHeard={lastHeard}
+          fx={chantFx}
+          onToggle={() => (speech.listening ? speech.stop() : speech.start())}
+        />
         {toast && <div className="toast">{toast}</div>}
       </main>
 
       <aside className="side">
-        <ChantPanel listening={speech.listening} interim={speech.interim} fx={chantFx} mana={s.mana.current} manaMax={s.mana.max} />
         <Section title="詠唱キュー">
           <QueuePanel s={s} onCancel={(id) => engine.cancelSpell(id)} />
         </Section>

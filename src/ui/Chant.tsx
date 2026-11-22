@@ -18,17 +18,21 @@ export interface ChantFx {
 const FULL_CHARGE_MS = 1600;
 
 export function ChantPanel({
+  supported,
   listening,
   interim,
+  error,
+  lastHeard,
   fx,
-  mana,
-  manaMax,
+  onToggle,
 }: {
+  supported: boolean;
   listening: boolean;
   interim: string;
+  error: string | null;
+  lastHeard: string | null;
   fx: ChantFx | null;
-  mana: number;
-  manaMax: number;
+  onToggle: () => void;
 }) {
   // 話し始めた時刻を覚えて、話している長さでたまり具合を決める（画面は毎フレーム描き直される）
   const startedAt = useRef<number | null>(null);
@@ -40,10 +44,14 @@ export function ChantPanel({
   const R = 52;
   const circ = 2 * Math.PI * R;
 
+  if (!supported) {
+    return <section className="chant chant-off"><span className="muted">このブラウザは音声入力に対応していない（Chrome / Edge / Safari で使える）</span></section>;
+  }
   return (
     <section className={`chant chant-${state}`} style={{ '--charge': charge } as React.CSSProperties} aria-label="詠唱">
-      <div className="chant-circle" aria-hidden>
-        <svg viewBox="0 0 140 140">
+      {/* 魔法陣そのものが音声の ON/OFF ボタン */}
+      <button className="chant-circle" onClick={onToggle} title="押すと音声入力の ON / OFF。ONの間はずっと聞き取り、話して少し間が空くと詠唱される">
+        <svg viewBox="0 0 140 140" aria-hidden>
           <circle className="cc-base" cx="70" cy="70" r={R} />
           <circle className="cc-fill" cx="70" cy="70" r={R} strokeDasharray={circ} strokeDashoffset={circ * (1 - (state === 'fire' ? 1 : charge))} />
           <g className="cc-rune">
@@ -53,18 +61,18 @@ export function ChantPanel({
           </g>
           <circle className="cc-core" cx="70" cy="70" r={6 + charge * 14} />
         </svg>
-        {state === 'fire' && <div className="chant-burst" />}
-      </div>
-      <div className="chant-text">
-        {state === 'charging' && <span className="chant-heard">「{interim}」</span>}
-        {state === 'fire' && <span className="chant-ok">発動！</span>}
-        {state === 'fizzle' && <span className="chant-ng">不発… {fx?.reason}</span>}
-        {state === 'idle' && <span className="muted">唱えると魔力がたまる</span>}
-        {state === 'off' && <span className="muted">🎙 を ON にすると唱えられる</span>}
-      </div>
-      <div className="chant-mana">
-        <div className="chant-mana-fill" style={{ width: `${Math.max(0, Math.min(1, mana / manaMax)) * 100}%` }} />
-        <span>魔力 {Math.floor(mana)}/{manaMax}</span>
+        <span className="chant-mic">{listening ? '🎙 ON' : '🎙 OFF'}</span>
+        {state === 'fire' && <span className="chant-burst" />}
+      </button>
+      <div className="chant-info">
+        <div className="chant-text">
+          {state === 'charging' && <span className="chant-heard">「{interim}」</span>}
+          {state === 'fire' && <span className="chant-ok">発動！</span>}
+          {state === 'fizzle' && <span className="chant-ng">不発… {fx?.reason}</span>}
+          {state === 'idle' && <span>聞き取り中… 唱えると魔力がたまり、少し間を空けると発動</span>}
+          {state === 'off' && (error ? <span className="bad">{error}</span> : <span className="muted">魔法陣を押すと音声 ON。呪文は声で唱える（音声はブラウザの音声認識で文字にする。Chrome では Google のサーバーに送られる）</span>)}
+        </div>
+        {lastHeard && !interim && <div className="muted heard-last">聞き取った候補（【】が使ったもの）: {lastHeard}</div>}
       </div>
     </section>
   );

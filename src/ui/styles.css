@@ -848,7 +848,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .chant-charging { --cc: #7fe8ff; box-shadow: 0 0 calc(10px + var(--charge) * 30px) rgba(127, 232, 255, calc(0.2 + var(--charge) * 0.5)); }
 .chant-fire { --cc: var(--gold); box-shadow: 0 0 40px rgba(255, 209, 102, 0.7); }
 .chant-fizzle { --cc: #777; }
-.chant-off { opacity: 0.7; }
+
 .chant-circle { position: relative; width: 150px; height: 150px; }
 .chant-circle svg { width: 100%; height: 100%; overflow: visible; }
 .cc-base { fill: none; stroke: rgba(255, 255, 255, 0.1); stroke-width: 6; }
@@ -914,3 +914,24 @@ span.cmd-btn, span.guide-name { cursor: default; }
   75% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ------------------------------------------------ 左にHP、右に盤面。下に魔法陣（音声ボタン） */
+.battle-row { width: 100%; display: grid; grid-template-columns: minmax(200px, 250px) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.hud-col { display: flex; flex-direction: column; justify-content: space-between; gap: 16px; padding: 6px 0; }
+.arena .hud-col .hud { width: 100%; }
+.battle-row .fields { width: 100%; box-sizing: border-box; }
+@media (min-width: 1001px) { .arena { --cell: min(6.8vh, 76px); } }
+@media (max-width: 1000px) {
+  .battle-row { grid-template-columns: 1fr; }
+  .hud-col { display: contents; }
+  .hud-enemy { order: -1; }
+  .hud-player { order: 1; }
+}
+.arena > .chant { flex-direction: row; width: 100%; box-sizing: border-box; align-items: center; gap: 14px; padding: 6px 14px; }
+.chant-circle { position: relative; width: 92px; height: 92px; flex-shrink: 0; padding: 0; border: none; background: none; border-radius: 50%; cursor: pointer; }
+.chant-circle:hover:not(:disabled) { background: none; box-shadow: 0 0 18px rgba(169, 139, 255, 0.4); }
+.chant-mic { position: absolute; left: 0; right: 0; bottom: -2px; font-size: 0.68rem; font-weight: 700; color: var(--cc); text-shadow: 0 0 4px #000; }
+.chant-off .chant-circle { opacity: 0.75; }
+.chant-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.chant-info .chant-text { text-align: left; }
+.chant-charging .chant-heard { font-size: 1.15rem; }
