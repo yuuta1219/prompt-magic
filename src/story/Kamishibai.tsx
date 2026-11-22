@@ -35,6 +35,8 @@ function loadSoundOn(): boolean {
 const IMG_BASE = '../story/';
 const VOICE_BASE = '../voice/';
 const SFX_BASE = '../sfx/';
+/** セリフが出てから声が鳴るまでの間 (ms) */
+const VOICE_DELAY_MS = 200;
 const TYPE_MS = 28;
 
 export function Kamishibai({ scene, onDone }: { scene: StoryScene; onDone: () => void }) {
@@ -65,7 +67,10 @@ export function Kamishibai({ scene, onDone }: { scene: StoryScene; onDone: () =>
     if (line.sfx) play(`${SFX_BASE}${line.sfx}.mp3`, 0.6);
     const who = line.who === undefined ? 'ナレーション' : line.who;
     const key = voiceKey(who, line.text);
-    if (VOICE_CAST[who] && VOICES.has(key)) voiceRef.current = play(`${VOICE_BASE}${key}.mp3`, 1);
+    if (!VOICE_CAST[who] || !VOICES.has(key)) return;
+    // ページを送った瞬間に鳴ると早すぎるので、少し待ってからしゃべる
+    const t = setTimeout(() => (voiceRef.current = play(`${VOICE_BASE}${key}.mp3`, 1)), VOICE_DELAY_MS);
+    return () => clearTimeout(t);
   }, [pageIdx, lineIdx, soundOn]); // eslint-disable-line react-hooks/exhaustive-deps
   // 紙芝居を閉じたら声を止める
   useEffect(() => () => voiceRef.current?.pause(), []);

@@ -30,6 +30,9 @@ export function speakable(text: string): string {
     .replace(/汝/g, 'なんじ')
     .replace(/我は/g, 'われは')
     .replace(/術式霧/g, 'じゅつしききり')
+    .replace(/唱え/g, 'となえ') // 「うたえ」と読まれる
+    .replace(/なき者/g, 'なきもの') // 「なきしゃ」と読まれる
+    .replace(/門を開け/g, 'もんをひらけ') // 「あけ」と読まれる
     .replace(/delete/gi, 'デリート')
     .replace(/[“”「」]/g, '')
     .replace(/――/g, '、');

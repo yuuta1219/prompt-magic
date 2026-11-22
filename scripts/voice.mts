@@ -29,11 +29,18 @@ for (const f of SCRIPTS) {
     }
 }
 
+// どの読み・どの声で作ったかを覚えておき、読みの直し（speakable）や配役を変えたら作り直す
+const SPOKEN = join(OUT, 'spoken.json');
+const spoken: Record<string, string> = existsSync(SPOKEN) ? JSON.parse(readFileSync(SPOKEN, 'utf8')) : {};
 let made = 0;
 for (const [key, { who, text }] of want) {
   const mp3 = join(OUT, `${key}.mp3`);
-  if (existsSync(mp3)) continue;
   const c = VOICE_CAST[who];
+  const how = JSON.stringify([c.speaker, c.speed ?? 1, c.pitch ?? 0, c.intonation ?? 1, speakable(text)]);
+  if (existsSync(mp3) && (spoken[key] === undefined || spoken[key] === how)) {
+    spoken[key] = how;
+    continue;
+  }
   const q = await fetch(`${URL_BASE}/audio_query?speaker=${c.speaker}&text=${encodeURIComponent(speakable(text))}`, { method: 'POST' });
   if (!q.ok) throw new Error(`audio_query に失敗: ${who}「${text}」 ${q.status}`);
   const query = await q.json();
@@ -48,11 +55,14 @@ for (const [key, { who, text }] of want) {
   writeFileSync(wav, Buffer.from(await r.arrayBuffer()));
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-ac', '1', '-ar', '24000', '-b:a', '48k', mp3]);
   unlinkSync(wav);
+  spoken[key] = how;
   made++;
   console.log(`作った: ${who}「${text}」`);
 }
 
 // 台本から消えたセリフの音声は消す
 for (const f of readdirSync(OUT)) if (f.endsWith('.mp3') && !want.has(f.replace('.mp3', ''))) unlinkSync(join(OUT, f));
+for (const k of Object.keys(spoken)) if (!want.has(k)) delete spoken[k];
+writeFileSync(SPOKEN, JSON.stringify(spoken, null, 1) + '\n');
 writeFileSync(join(ROOT, 'src/story/voices.json'), JSON.stringify([...want.keys()].sort(), null, 0) + '\n');
 console.log(`完了: 新しく ${made} 本 / 全部で ${want.size} 本`);
