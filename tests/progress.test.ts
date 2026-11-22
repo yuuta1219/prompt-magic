@@ -2,7 +2,7 @@ import { applyResult, newProgress, unlockSkill } from '../src/game/progress';
 
 describe('進み具合', () => {
   it('最初は SP2・ウォーターだけ・ステージ1', () => {
-    expect(newProgress()).toEqual({ sp: 2, unlocked: ['water'], stage: 1, wins: 0, losses: 0 });
+    expect(newProgress()).toEqual({ sp: 2, unlocked: ['water'], stage: 1, wins: 0, losses: 0, story: [] });
   });
   it('勝つと SP+(4+ステージ/2) で次のステージ、負けると SP+1 で同じステージ', () => {
     const w = applyResult(newProgress(), true);

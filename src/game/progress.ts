@@ -10,6 +10,8 @@ export interface Progress {
   stage: number;
   wins: number;
   losses: number;
+  /** 見終わったストーリーの場面 */
+  story: string[];
 }
 
 const KEY = 'prompt-magic.progress.v1';
@@ -18,7 +20,7 @@ const KEY = 'prompt-magic.progress.v1';
 const RENAMED: Record<string, string> = { void_ragnarok: 'fiat_nox', vanitas: 'fiat_nox' };
 
 export function newProgress(): Progress {
-  return { sp: STAGE.SP_START, unlocked: [...INITIAL_UNLOCKED], stage: 1, wins: 0, losses: 0 };
+  return { sp: STAGE.SP_START, unlocked: [...INITIAL_UNLOCKED], stage: 1, wins: 0, losses: 0, story: [] };
 }
 
 export function loadProgress(): Progress {
@@ -35,6 +37,7 @@ export function loadProgress(): Progress {
       stage: Number.isFinite(p.stage) ? Math.max(1, Math.floor(p.stage!)) : 1,
       wins: Number.isFinite(p.wins) ? p.wins! : 0,
       losses: Number.isFinite(p.losses) ? p.losses! : 0,
+      story: Array.isArray(p.story) ? p.story.filter((id): id is string => typeof id === 'string') : [],
     };
   } catch {
     return newProgress();
@@ -78,4 +81,9 @@ export function unlockSkill(p: Progress, id: string): Progress | string {
   const chk = canUnlock(id, new Set(p.unlocked), p.sp);
   if (!chk.ok) return chk.reason;
   return { ...p, sp: p.sp - SKILL_BY_ID.get(id)!.cost, unlocked: [...p.unlocked, id] };
+}
+
+/** ストーリーの場面を見終わった */
+export function markStorySeen(p: Progress, id: string): Progress {
+  return p.story.includes(id) ? p : { ...p, story: [...p.story, id] };
 }
