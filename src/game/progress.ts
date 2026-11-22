@@ -42,11 +42,14 @@ export function loadProgress(): Progress {
 }
 
 /**
- * 開発用: URL に ?unlockall を付けて開くと、スキルをすべて解放する（npm run dev のときだけ。本番ビルドでは無効）。
+ * 開発用: URL に ?unlockall を付けて開くと、スキルをすべて解放する（npm run dev のとき。ALLOW_UNLOCK_ALL_IN_PRODUCTION が true の間は公開版でも）。
  * 一度解放したら URL から消すので、リロードしても何度も実行されない。
  */
+/** 【一時的】公開版でも ?unlockall を使えるようにする。元に戻すときは false にする */
+const ALLOW_UNLOCK_ALL_IN_PRODUCTION = true;
+
 export function applyDevGrant(p: Progress): Progress {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return p;
+  if ((!import.meta.env.DEV && !ALLOW_UNLOCK_ALL_IN_PRODUCTION) || typeof window === 'undefined') return p;
   const url = new URL(window.location.href);
   if (!url.searchParams.has('unlockall')) return p;
   url.searchParams.delete('unlockall');
