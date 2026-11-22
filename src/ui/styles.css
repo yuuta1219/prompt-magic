@@ -1008,3 +1008,17 @@ span.cmd-btn, span.guide-name { cursor: default; }
   .battle-row { border: none; background: none; box-shadow: none; }
   .battle-row > .fields { border: 1px solid var(--line); border-radius: 10px; }
 }
+
+/* ------------------------------------------------ ヘッダーは全幅、その下に「詠唱の枠・戦場・右の列」をひとつの舞台で */
+.app { grid-template-columns: minmax(0, 1fr); max-width: 1700px; row-gap: 8px; }
+.app > .title-bar { padding: 2px 4px; }
+.battle-row { grid-template-columns: minmax(240px, 290px) minmax(0, 1fr) minmax(300px, 30%); }
+.side-wrap { position: relative; min-height: 0; border-left: 1px solid rgba(var(--glow), 0.2); background: linear-gradient(270deg, rgba(var(--glow), 0.05), transparent); }
+.side-wrap > .side { position: absolute; inset: 0; max-height: none; overflow-y: auto; padding: 10px 12px; top: 0; }
+.side-wrap .section, .side-wrap section { background: rgba(12, 10, 26, 0.55); }
+@media (max-width: 1000px) {
+  .battle-row { grid-template-columns: minmax(0, 1fr); }
+  .side-wrap { order: 3; border-left: none; background: none; }
+  .side-wrap > .side { position: static; padding: 8px 0; }
+}
+.side-wrap > .side { scrollbar-width: thin; scrollbar-color: rgba(169, 139, 255, 0.4) transparent; }

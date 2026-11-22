@@ -189,25 +189,25 @@ export function App() {
           }}
         />
       )}
+      <header className="title-bar">
+        <h1>PROMPT MAGIC</h1>
+        <span className="subtitle">— 詠唱とは、世界への命令である —</span>
+        <div className="controls">
+          <label>
+            速度
+            <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
+              <option value={0.5}>0.5x</option>
+              <option value={0.75}>0.75x</option>
+              <option value={1}>1x</option>
+            </select>
+          </label>
+          <button className={drawer === 'guide' ? 'on' : ''} onClick={() => setDrawer((d) => (d === 'guide' ? null : 'guide'))}>📖 呪文の書</button>
+          <button onClick={() => setPaused((p) => !p)}>{paused ? '▶ 再開' : '⏸ 一時停止'}</button>
+          <button onClick={restart}>↻ 再戦</button>
+          <button className={`tree-btn ${progress.sp > 0 ? 'has-sp' : ''}`} onClick={() => setTreeOpen(true)}>🌳 スキル（SP {progress.sp}）</button>
+        </div>
+      </header>
       <main className="arena">
-        <header className="title-bar">
-          <h1>PROMPT MAGIC</h1>
-          <span className="subtitle">— 詠唱とは、世界への命令である —</span>
-          <div className="controls">
-            <label>
-              速度
-              <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
-                <option value={0.5}>0.5x</option>
-                <option value={0.75}>0.75x</option>
-                <option value={1}>1x</option>
-              </select>
-            </label>
-            <button className={drawer === 'guide' ? 'on' : ''} onClick={() => setDrawer((d) => (d === 'guide' ? null : 'guide'))}>📖 呪文の書</button>
-            <button onClick={() => setPaused((p) => !p)}>{paused ? '▶ 再開' : '⏸ 一時停止'}</button>
-            <button onClick={restart}>↻ 再戦</button>
-            <button className={`tree-btn ${progress.sp > 0 ? 'has-sp' : ''}`} onClick={() => setTreeOpen(true)}>🌳 スキル（SP {progress.sp}）</button>
-          </div>
-        </header>
 
         {/* 戦場: 左に敵と自分のHP、右に3Dの盤面 */}
         <div className={`battle-row bs-${chantFx ? (chantFx.ok ? 'fire' : 'fizzle') : speech.interim ? 'charging' : speech.listening ? 'idle' : 'off'}`}>
@@ -293,39 +293,42 @@ export function App() {
           )}
         </div>
 
+          {/* 右の列も同じ舞台の中。高さは盤面に合わせ、はみ出す分は中でスクロール */}
+          <div className="side-wrap">
+          <aside className="side">
+            <Section title="詠唱キュー">
+              <QueuePanel s={s} onCancel={(id) => engine.cancelSpell(id)} />
+            </Section>
+            <Section title="詠唱の解釈結果">
+              <InterpretationPanel entry={lastEntry} />
+            </Section>
+            <Section title="魔力消費内訳">
+              <CostPanel entry={lastEntry} />
+            </Section>
+            <Section title="自律術式（ハーネス）">
+              <HarnessPanel s={s} />
+            </Section>
+            <Section title="戦闘ログ">
+              <LogPanel s={s} />
+            </Section>
+            <Section title="詠唱履歴" right={history.length > 0 ? <button className="btn-mini" onClick={() => { setHistory([]); saveHistory([]); }}>消去</button> : undefined}>
+              {history.length === 0 ? (
+                <div className="muted">唱えた呪文がここに残る</div>
+              ) : (
+                <ul className="history">
+                  {history.map((h) => (
+                    <li key={h}>{h}</li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+          </aside>
+          </div>
         </div>
 
         {toast && <div className="toast">{toast}</div>}
       </main>
 
-      <aside className="side">
-        <Section title="詠唱キュー">
-          <QueuePanel s={s} onCancel={(id) => engine.cancelSpell(id)} />
-        </Section>
-        <Section title="詠唱の解釈結果">
-          <InterpretationPanel entry={lastEntry} />
-        </Section>
-        <Section title="魔力消費内訳">
-          <CostPanel entry={lastEntry} />
-        </Section>
-        <Section title="自律術式（ハーネス）">
-          <HarnessPanel s={s} />
-        </Section>
-        <Section title="戦闘ログ">
-          <LogPanel s={s} />
-        </Section>
-        <Section title="詠唱履歴" right={history.length > 0 ? <button className="btn-mini" onClick={() => { setHistory([]); saveHistory([]); }}>消去</button> : undefined}>
-          {history.length === 0 ? (
-            <div className="muted">唱えた呪文がここに残る</div>
-          ) : (
-            <ul className="history">
-              {history.map((h) => (
-                <li key={h}>{h}</li>
-              ))}
-            </ul>
-          )}
-        </Section>
-      </aside>
     </div>
   );
 }
