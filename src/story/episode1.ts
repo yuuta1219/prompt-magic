@@ -13,7 +13,7 @@ const script = parseScript(raw);
 /** チャプター番号ごとの戦闘の設定 */
 const BATTLE: Record<number, { stage: number; sprite: string; thumb: string }> = {
   1: { stage: 1, sprite: 'cleaner', thumb: 'ep1/03-cleaner' },
-  2: { stage: 2, sprite: 'patrol', thumb: 'ep1/02-wet' },
+  2: { stage: 2, sprite: 'patrol', thumb: 'ep1/10-patrol' },
   3: { stage: 3, sprite: 'vending', thumb: 'ep1/04-vending' },
   4: { stage: 4, sprite: 'archive', thumb: 'ep1/05-log' },
   5: { stage: 5, sprite: 'cerberus', thumb: 'ep1/06-gate' },
