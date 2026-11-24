@@ -1,5 +1,5 @@
 /**
- * ストーリー第1話「812年寝坊した詠唱者」。
+ * ストーリー第1話「82年寝坊した詠唱者」。
  *
  * 文章（セリフ・ページの絵・色・演出）は台本 ep1.txt にある。直すときは ep1.txt だけを書き換える。
  * ここには、台本に書かない戦闘の設定（強さ・敵の画像・マスの絵）だけを置く。
@@ -28,7 +28,7 @@ export const EPISODE1: Episode = {
   subtitle: script.subtitle,
   prologue: { id: 'ep1-prologue', pages: script.prologue, bgm: 'underground' },
   prologueThumb: 'ep1/01-pod',
-  prologueTitle: '812年後の目覚め',
+  prologueTitle: '82年後の目覚め',
   prologueDesc: '地下の休眠施設で、カプセルが壊れた。',
   nextThumb: 'ep1/07-surface',
   mapBgm: 'main',

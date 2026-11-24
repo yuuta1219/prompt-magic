@@ -41,7 +41,7 @@ describe('台本テキストの読み取り', () => {
     const { readFileSync } = await import('node:fs');
     const sc = parseScript(readFileSync('src/story/ep1.txt', 'utf8'));
     expect(sc.title).toBe('第1話');
-    expect(sc.subtitle).toBe('812年寝坊した詠唱者');
+    expect(sc.subtitle).toBe('82年寝坊した詠唱者');
     expect(sc.chapters.map((c) => c.enemy)).toEqual(['清掃術式体', '巡回術式体', '自販機型術式体', '記録保管術式体', '門番術式体ケルベロス']);
     expect(sc.prologue[0].title).toBe(true);
     expect(sc.prologue[2]).toMatchObject({ img: 'ep1/01-pod', tone: 'alarm', fx: 'shake' });
