@@ -31,6 +31,7 @@ export const EPISODE1: Episode = {
   prologueTitle: '812年後の目覚め',
   prologueDesc: '地下の休眠施設で、カプセルが壊れた。',
   nextThumb: 'ep1/07-surface',
+  mapBgm: 'main',
   chapters: script.chapters.map((c) => ({
     id: `ep1-c${c.no}`,
     no: c.no,

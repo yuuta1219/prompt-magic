@@ -60,4 +60,6 @@ export interface Episode {
   prologueDesc?: string;
   /** クリアしたあと、次の話のマスに出す絵 */
   nextThumb?: string;
+  /** マップ（チャプター選択）で流す曲。話ごとのメインテーマ */
+  mapBgm?: string;
 }

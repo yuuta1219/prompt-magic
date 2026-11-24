@@ -28,6 +28,8 @@ export const EPISODE2: Episode = {
   subtitle: script.subtitle,
   prologue: { id: 'ep2-prologue', pages: script.prologue, bgm: 'ep2-field' },
   prologueThumb: 'ep2/01-ruins',
+  /** 第2話のメインテーマ（ep2-main が無いあいだは、廃墟の曲で代わりに流す） */
+  mapBgm: 'ep2-main',
   prologueTitle: '地上の三日間',
   prologueDesc: '折れた塔を目指して、廃墟の東京を歩く。',
   chapters: script.chapters.map((c) => ({

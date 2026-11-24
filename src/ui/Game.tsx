@@ -86,9 +86,9 @@ export function Game() {
 
   // BGM: マップはメインテーマ、紙芝居はその場面の曲（戦闘中の曲は戦闘画面が決める）
   useEffect(() => {
-    if (screen.k === 'map') playBgm('main');
+    if (screen.k === 'map') playBgm((ep.mapBgm as BgmName | undefined) ?? 'main');
     else if (screen.k === 'story') playBgm((screen.scene.bgm as BgmName | undefined) ?? 'underground');
-  }, [screen]);
+  }, [screen, ep]);
 
   if (screen.k === 'story') return <Kamishibai key={screen.scene.id} scene={screen.scene} onDone={screen.then} />;
 

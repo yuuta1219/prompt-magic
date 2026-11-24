@@ -12,10 +12,11 @@
  */
 import { soundOn } from './sound';
 
-export type BgmName = 'main' | 'underground' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending' | `ep2-${'field' | 'village' | 'night' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending'}`;
+export type BgmName = 'main' | 'underground' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending' | `ep2-${'main' | 'field' | 'village' | 'night' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending'}`;
 
 /** 曲のファイルがまだ無いときに、代わりに流す曲（第2話の曲ができるまでは第1話の曲） */
 const FALLBACK: Partial<Record<BgmName, BgmName>> = {
+  'ep2-main': 'ep2-field',
   'ep2-field': 'underground',
   'ep2-village': 'underground',
   'ep2-night': 'underground',
