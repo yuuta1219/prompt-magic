@@ -229,7 +229,7 @@ export class EnemyAI {
         const order = s.rng.shuffle([0, 1, 2]);
         order.forEach((band, i) => {
           const cells = this.all().filter((c) => Math.floor(c.x / 3) === band);
-          this.bossHit(cells, 12, 'fire', base + i * 1300, `三つ首の咆哮（${['左', '真ん中', '右'][band]}）`);
+          this.bossHit(cells, 16, 'fire', Math.max(base, 3000) + i * 3000, `三つ首の咆哮（${['左', '真ん中', '右'][band]}）`);
         });
         say('三つ首の咆哮', '三つの列が時間差で燃える。よく見て、最後に燃える列へ');
         return true;
