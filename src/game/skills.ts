@@ -44,7 +44,7 @@ export const SKILLS: SkillDef[] = [
   { id: 'wide_water', name: 'ワイドウォーター', kind: 'passive', cost: 2, requires: ['water'], pos: { x: 8, y: 7 }, branch: 'water', desc: 'ウォーターの範囲が 3×3 → 5×5' },
   { id: 'long_wet', name: 'ロングウェット', kind: 'passive', cost: 1, requires: ['wide_water'], pos: { x: 8, y: 6 }, branch: 'water', desc: '「濡れ」が続く時間 6秒 → 10秒' },
   { id: 'tidal', name: 'タイダル', kind: 'spell', cost: 3, requires: ['long_wet'], pos: { x: 8, y: 5 }, branch: 'water', incantation: 'タイダル', desc: '横3列を大波で押し流す（威力10）。すべて濡らす' },
-  { id: 'maelstrom', name: 'メイルシュトローム', kind: 'spell', cost: 4, requires: ['tidal'], pos: { x: 8, y: 4 }, branch: 'water', incantation: 'メイルシュトローム', desc: '5×5の大渦（威力18）。濡らして敵の魔力-30' },
+  { id: 'maelstrom', name: 'メイルシュトローム', kind: 'spell', cost: 4, requires: ['tidal'], pos: { x: 8, y: 4 }, branch: 'water', incantation: 'メイルシュトローム', desc: '5×5の大渦（威力18）。濡らして敵の行動を0.8秒遅らせる' },
   { id: 'deep_requiem', name: 'ディープブルー・レクイエム', kind: 'spell', cost: 7, requires: ['maelstrom'], pos: { x: 8, y: 3 }, branch: 'water', incantation: 'ディープブルー レクイエム', desc: '【究極】盤面すべて（威力30）を沈めて濡らす' },
   { id: 'aqua_lance', name: 'アクアランス', kind: 'spell', cost: 1, requires: ['water'], pos: { x: 9, y: 7 }, branch: 'water', incantation: 'アクアランス', desc: '縦一列（威力15）を貫いて濡らす' },
   { id: 'aqua_ring', name: 'アクアリング', kind: 'spell', cost: 2, requires: ['aqua_lance'], pos: { x: 10, y: 6 }, branch: 'water', incantation: 'アクアリング', desc: '照準の周り8マス（威力14）を水の輪で囲む' },
@@ -102,8 +102,8 @@ export const SKILLS: SkillDef[] = [
   { id: 'earth', name: 'アース', kind: 'spell', cost: 1, requires: ['water'], pos: { x: 10, y: 7 }, branch: 'earth', incantation: 'アース', desc: '縦一列（威力14）を岩柱で貫く' },
   { id: 'rock_blast', name: 'ロックブラスト', kind: 'spell', cost: 2, requires: ['earth'], pos: { x: 11, y: 6 }, branch: 'earth', incantation: 'ロックブラスト', desc: '単体（威力28）。結界を貫く' },
   { id: 'quake', name: 'クエイク', kind: 'spell', cost: 2, requires: ['rock_blast'], pos: { x: 12, y: 5 }, branch: 'earth', incantation: 'クエイク', desc: '縦3列（威力13）の地震' },
-  { id: 'gaia', name: 'ガイアプレス', kind: 'spell', cost: 3, requires: ['quake'], pos: { x: 13, y: 4 }, branch: 'earth', incantation: 'ガイアプレス', desc: '5×5（威力20）。敵の魔力-40' },
-  { id: 'terra_end', name: 'エンド・オブ・ジ・アース', kind: 'spell', cost: 7, requires: ['gaia'], pos: { x: 14, y: 3 }, branch: 'earth', incantation: 'エンド オブ ジ アース', desc: '【究極】盤面すべて（威力45）。敵の魔力-120' },
+  { id: 'gaia', name: 'ガイアプレス', kind: 'spell', cost: 3, requires: ['quake'], pos: { x: 13, y: 4 }, branch: 'earth', incantation: 'ガイアプレス', desc: '5×5（威力20）。敵の行動を1.0秒遅らせる' },
+  { id: 'terra_end', name: 'エンド・オブ・ジ・アース', kind: 'spell', cost: 7, requires: ['gaia'], pos: { x: 14, y: 3 }, branch: 'earth', incantation: 'エンド オブ ジ アース', desc: '【究極】盤面すべて（威力45）。敵の行動を3.0秒遅らせる' },
   { id: 'stone_skin', name: '岩の守り', kind: 'passive', cost: 2, requires: ['earth'], pos: { x: 12, y: 6 }, branch: 'earth', desc: 'ガードの軽減率 +15%' },
   { id: 'earth_dmg1', name: '土の加護', kind: 'passive', cost: 2, requires: ['rock_blast'], pos: { x: 13, y: 5 }, branch: 'earth', desc: '土の魔法の威力 ×1.15' },
   { id: 'earth_dmg2', name: '土の真髄', kind: 'passive', cost: 3, requires: ['earth_dmg1'], pos: { x: 14, y: 4 }, branch: 'earth', desc: '土の魔法の威力 さらに×1.15' },
@@ -127,15 +127,15 @@ export const SKILLS: SkillDef[] = [
   // ---- dark
   { id: 'predict', name: 'プレディクト', kind: 'command', cost: 1, requires: ['water'], pos: { x: 9, y: 9 }, branch: 'dark', incantation: 'プレディクト ○○', desc: '敵の逃げる先を予測して撃つ' },
   { id: 'quick', name: 'クイック', kind: 'command', cost: 1, requires: ['predict'], pos: { x: 10, y: 10 }, branch: 'dark', incantation: 'クイック ○○', desc: '着弾までの時間 0.9秒 → 0.45秒' },
-  { id: 'shadow', name: 'シャドウ', kind: 'spell', cost: 2, requires: ['quick'], pos: { x: 11, y: 11 }, branch: 'dark', incantation: 'シャドウ', desc: '斜め2本（威力18）。敵の魔力-20' },
+  { id: 'shadow', name: 'シャドウ', kind: 'spell', cost: 2, requires: ['quick'], pos: { x: 11, y: 11 }, branch: 'dark', incantation: 'シャドウ', desc: '斜め2本（威力18）。敵の行動を0.5秒遅らせる' },
   { id: 'dark_bolt', name: 'ダークボルト', kind: 'spell', cost: 2, requires: ['shadow'], pos: { x: 12, y: 12 }, branch: 'dark', incantation: 'ダークボルト', desc: '単体（威力28）。結界を貫き、魔力-20' },
-  { id: 'eclipse', name: 'エクリプス', kind: 'spell', cost: 3, requires: ['dark_bolt'], pos: { x: 13, y: 13 }, branch: 'dark', incantation: 'エクリプス', desc: '2マス先の輪（威力30）。敵の魔力-50' },
+  { id: 'eclipse', name: 'エクリプス', kind: 'spell', cost: 3, requires: ['dark_bolt'], pos: { x: 13, y: 13 }, branch: 'dark', incantation: 'エクリプス', desc: '2マス先の輪（威力30）。敵の行動を1.2秒遅らせる' },
   { id: 'crypt_nova', name: 'クリプス・ノヴァ', kind: 'spell', cost: 5, requires: ['eclipse'], pos: { x: 14, y: 14 }, branch: 'dark', incantation: 'クリプス ノヴァ', desc: '周囲7×7にランダム10か所（威力26）。結界を貫く' },
-  { id: 'apocalypse', name: 'アポカリプス', kind: 'spell', cost: 8, requires: ['crypt_nova'], pos: { x: 15, y: 15 }, branch: 'dark', incantation: 'アポカリプス', desc: '【究極】盤面すべて（威力70）。結界を貫き、敵の魔力-80' },
-  { id: 'memento_mori', name: 'メメント・モリ', kind: 'spell', cost: 8, requires: ['crypt_nova'], pos: { x: 13, y: 15 }, branch: 'dark', incantation: 'メメント モリ', desc: '【究極】盤面すべて（威力45）。敵のHPが40%以下なら2.5倍。敵の魔力-100' },
+  { id: 'apocalypse', name: 'アポカリプス', kind: 'spell', cost: 8, requires: ['crypt_nova'], pos: { x: 15, y: 15 }, branch: 'dark', incantation: 'アポカリプス', desc: '【究極】盤面すべて（威力70）。結界を貫き、敵の行動を2.0秒遅らせる' },
+  { id: 'memento_mori', name: 'メメント・モリ', kind: 'spell', cost: 8, requires: ['crypt_nova'], pos: { x: 13, y: 15 }, branch: 'dark', incantation: 'メメント モリ', desc: '【究極】盤面すべて（威力45）。敵のHPが40%以下なら2.5倍。敵の行動を2.5秒遅らせる' },
   { id: 'veni_vidi_vici', name: 'ウェニー・ウィディー・ウィキー', kind: 'spell', cost: 5, requires: [], special: true, needCount: 25, pos: { x: -1, y: -1 }, branch: 'hybrid', incantation: 'ウェニー ウィディー ウィキー', desc: '【特別】「来た、見た、勝った」。この戦闘のあいだ攻撃力1.5倍。1回の戦闘で1度だけ使える。スキルを25個覚えると解放できる' },
   { id: 'deus_ex_machina', name: 'デウス・エクス・マキナ', kind: 'spell', cost: 10, requires: [], special: true, needCount: 50, pos: { x: -1, y: -1 }, branch: 'hybrid', incantation: 'デウス エクス マキナ', desc: '【特別】敵の今のHPを半分にする（結界も無視）。1回の戦闘で1度だけ使える。スキルを50個覚えると解放できる' },
-  { id: 'fiat_nox', name: 'フィアト・ノクス', kind: 'spell', cost: 15, requires: [], special: true, pos: { x: -1, y: -1 }, branch: 'dark', incantation: 'フィアト ノクス', desc: '【真・最強】「闇あれ」。盤面すべて（威力999）。結界を貫き、敵の魔力を消し去り、時を止めて3秒凍結、30%回復' },
+  { id: 'fiat_nox', name: 'フィアト・ノクス', kind: 'spell', cost: 15, requires: [], special: true, pos: { x: -1, y: -1 }, branch: 'dark', incantation: 'フィアト ノクス', desc: '【真・最強】「闇あれ」。盤面すべて（威力999）。結界を貫き、時を止めて3秒凍結、30%回復' },
   { id: 'auto', name: '自律術式', kind: 'command', cost: 2, requires: ['predict'], pos: { x: 11, y: 10 }, branch: 'dark', incantation: 'オン アタック ○○', desc: '条件で自動発動する術式を1つ登録（オン アタック / オン ヒット / エブリ）' },
   { id: 'mana_regen', name: 'マナ回復アップ', kind: 'passive', cost: 2, requires: ['quick'], pos: { x: 12, y: 11 }, branch: 'dark', desc: '魔力の回復 +3/秒' },
   { id: 'mana_regen2', name: 'マナ回復アップII', kind: 'passive', cost: 3, requires: ['mana_regen'], pos: { x: 14, y: 12 }, branch: 'dark', desc: '魔力の回復 さらに+3/秒' },
@@ -149,7 +149,7 @@ export const SKILLS: SkillDef[] = [
   // ---- hybrid
   { id: 'steam', name: 'スチームバースト', kind: 'spell', cost: 3, requires: ['flare', 'tidal'], requiresAll: true, pos: { x: 7, y: 6 }, branch: 'hybrid', incantation: 'スチームバースト', desc: '水と炎。3×3（威力22）を濡らし、凍結中1.5倍' },
   { id: 'storm', name: 'サンダーストーム', kind: 'spell', cost: 3, requires: ['tidal', 'lightning'], requiresAll: true, pos: { x: 10, y: 5 }, branch: 'hybrid', incantation: 'サンダーストーム', desc: '水と雷。ランダム6か所（威力20）。濡らしながら落ちて必ず感電' },
-  { id: 'sandstorm', name: 'サンドストーム', kind: 'spell', cost: 3, requires: ['gale', 'quake'], requiresAll: true, pos: { x: 10, y: 4 }, branch: 'hybrid', incantation: 'サンドストーム', desc: '風と土。横3列（威力16）。敵の魔力-30' },
+  { id: 'sandstorm', name: 'サンドストーム', kind: 'spell', cost: 3, requires: ['gale', 'quake'], requiresAll: true, pos: { x: 10, y: 4 }, branch: 'hybrid', incantation: 'サンドストーム', desc: '風と土。横3列（威力16）。敵の行動を0.8秒遅らせる' },
   { id: 'frost_nova', name: 'フロストノヴァ', kind: 'spell', cost: 3, requires: ['blizzard', 'tornado'], requiresAll: true, pos: { x: 4, y: 9 }, branch: 'hybrid', incantation: 'フロストノヴァ', desc: '氷と風。5×5（威力12）を2秒凍結' },
   { id: 'chaos', name: 'カオス・ディザスター', kind: 'spell', cost: 8, requires: ['judgment', 'eclipse'], requiresAll: true, pos: { x: 8, y: 14 }, branch: 'hybrid', incantation: 'カオス ディザスター', desc: '【究極】光と闇。盤面すべて（威力60）。結界を貫き30%回復' },
 ];
@@ -298,17 +298,17 @@ export interface StageStats {
  */
 export const STAGE_RULES = {
   BASE_HP: 120,
-  BASE_POWER: 1.25,
-  BASE_THINK_MS: 2400,
+  BASE_POWER: 1.1,
+  BASE_THINK_MS: 3200,
   /** 1ステージごとの上がり幅（HP は割合、攻撃は倍率に足す、考える時間は ms 減る） */
-  HP_PER_STAGE: 0.095,
-  POWER_PER_STAGE: 0.04,
-  THINK_PER_STAGE: 25,
+  HP_PER_STAGE: 0.08,
+  POWER_PER_STAGE: 0.016,
+  THINK_PER_STAGE: 20,
   /** 強敵の倍率 */
   ELITE_HP: 1.12,
   ELITE_POWER: 1.06,
   ELITE_THINK_MS: 200,
-  MIN_THINK_MS: 1200,
+  MIN_THINK_MS: 2000,
 };
 
 export function stageStats(stage: number): StageStats {

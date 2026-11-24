@@ -48,8 +48,6 @@ export class BattleState {
   unitsLeft: number;
   /** ボスのギミックの種類（ふつうの敵は undefined） */
   readonly boss?: BossKind;
-  /** 敵の魔力（プレイヤーと同じルール: 最大300・毎秒8回復） */
-  enemyMana = new ManaPool();
 
   attacks: PendingAttack[] = [];
   fx: ImpactFx[] = [];
@@ -82,10 +80,12 @@ export class BattleState {
     // 群れの敵は、全体の HP を何体かに分ける（全体は少しだけ多め）
     this.units = Math.max(1, opts.units ?? 1);
     this.unitsLeft = this.units - 1;
-    const unitHp = this.units > 1 ? Math.round((st.enemyHp * 1.1) / this.units) : st.enemyHp;
+    // 負けイベントのオラクルは倒せない（HP は桁ちがい）
+    const unitHp = opts.boss === 'oracle' ? 99999 : this.units > 1 ? Math.round(st.enemyHp / this.units) : st.enemyHp;
     this.enemy = { hp: unitHp, maxHp: unitHp, pos: { ...ENEMY.START }, shield: null, frozenUntil: 0 };
     this.boss = opts.boss;
-    this.enemyPower = st.enemyPower;
+    // 負けイベントのオラクルの普通の攻撃は、第7話の敵と同じくらいの強さ（数発で倒れないように）
+    this.enemyPower = opts.boss === 'oracle' ? stageStats(33).enemyPower : st.enemyPower;
     this.enemyThinkMs = st.thinkMs;
     this.elite = st.elite;
     this.mana = new ManaPool(this.loadout.manaMax, this.loadout.manaMax, this.loadout.manaRegen);

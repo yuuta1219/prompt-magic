@@ -7,7 +7,7 @@
  *   古い/キャンセル済み/別バトルのレスポンスは捨てる
  */
 import { DAMAGE, SPELL_LIMITS, TICK_MS } from './constants';
-import { ELEMENTS } from './elements';
+import { ELEMENTS, stallMs } from './elements';
 import type { Loadout } from './skills';
 import type { Action, Spell } from '../interpreter/schema';
 import { GridSystem } from './GridSystem';
@@ -94,7 +94,6 @@ export class GameEngine {
     s.events = [];
 
     s.mana.regen(TICK_MS);
-    s.enemyMana.regen(TICK_MS);
     if (s.loadout.hpRegen > 0 && s.player.hp > 0) {
       s.hpRegenAcc += (s.loadout.hpRegen * TICK_MS) / 1000;
       if (s.hpRegenAcc >= 1) {
@@ -429,8 +428,9 @@ export class GameEngine {
         if (s.player.hp > before) s.log('magic', `吸収: HP ${before} → ${s.player.hp}`);
       }
       if (fx.manaBreak) {
-        s.enemyMana.current = Math.max(0, s.enemyMana.current - fx.manaBreak);
-        s.log('magic', fx.manaBreak >= s.enemyMana.max ? '魔力破壊: 敵の魔力をすべて消し去った' : `魔力破壊: 敵の魔力-${fx.manaBreak}`);
+        const ms = stallMs(fx.manaBreak);
+        this.enemyAI.stall(ms);
+        s.log('magic', `詠唱妨害: 敵の次の行動が${(ms / 1000).toFixed(1)}秒遅れる`);
       }
       if (lo.manaLeech > 0) s.mana.current = Math.min(s.mana.max, s.mana.current + lo.manaLeech);
     } else {

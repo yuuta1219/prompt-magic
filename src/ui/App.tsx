@@ -336,7 +336,6 @@ export function App({
           ) : (
             <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
           )}
-          <Bar value={s.enemyMana.current} max={s.enemyMana.max} kind="mana thin-mana" label={`魔力 ${Math.floor(s.enemyMana.current)}/${s.enemyMana.max}`} />
           <div className="enemy-cast">
             {enemyCast ? (
               <span className="casting-warn">⚠ 詠唱中「{enemyCast.label}」 着弾まで {Math.max(0, (enemyCast.resolveAt - s.time) / 1000).toFixed(1)}s</span>

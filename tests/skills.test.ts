@@ -118,14 +118,14 @@ describe('スキルツリー - 戦闘への反映', () => {
   });
 
   it('ステージが上がると敵が少しずつ強くなり、5の倍数は強敵', () => {
-    expect(stageStats(1)).toEqual({ enemyHp: 120, enemyPower: 1.25, thinkMs: 2400, elite: false, tier: 0 });
-    // 1ステージごとに HP+9.5%・攻撃+0.04・考える時間-25ms
-    expect(stageStats(2)).toMatchObject({ enemyHp: 131, enemyPower: 1.29, thinkMs: 2375 });
+    expect(stageStats(1)).toEqual({ enemyHp: 120, enemyPower: 1.1, thinkMs: 3200, elite: false, tier: 0 });
+    // 1ステージごとに HP+8%・攻撃+0.016・行動の間隔-20ms
+    expect(stageStats(2)).toMatchObject({ enemyHp: 130, enemyPower: 1.12, thinkMs: 3180 });
     // 5の倍数は強敵（HP×1.12・攻撃×1.06・さらに速い）
-    expect(stageStats(5)).toMatchObject({ elite: true, enemyHp: 185, enemyPower: 1.49, thinkMs: 2100 });
+    expect(stageStats(5)).toMatchObject({ elite: true, enemyHp: 177, enemyPower: 1.23, thinkMs: 2920 });
     expect(stageStats(6).enemyHp).toBeGreaterThan(stageStats(4).enemyHp);
-    expect(stageStats(100).thinkMs).toBe(1200); // いちばん速くても 1.2秒
-    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(143);
+    expect(stageStats(100).thinkMs).toBe(2000); // いちばん速くても 2秒（毎回 ±30% ゆらぐ）
+    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(139);
   });
 });
 
@@ -229,13 +229,13 @@ describe('魔法', () => {
     castNow(e, 'ドレイン');
     e.advance(1500);
     expect(e.s.player.hp).toBeGreaterThan(50);
-    const mana = e.s.enemyMana.current;
+    e.enemyAI.nextThinkAt = 10000;
     castNow(e, 'ダークボルト');
     e.s.enemy.shield = { reduction: 0.4, until: e.s.time + 9999 };
     const hp = e.s.enemy.hp;
     e.advance(1500);
     expect(hp - e.s.enemy.hp).toBe(ELEMENTS.dark_bolt.damage); // 結界を無視
-    expect(e.s.enemyMana.current).toBeLessThan(mana);
+    expect(e.enemyAI.nextThinkAt).toBeGreaterThan(10000); // 詠唱妨害で遅れた
   });
 
   it('枝の強化: 加護で威力アップ、節約で魔力ダウン', async () => {

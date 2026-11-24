@@ -1,3 +1,4 @@
+import { stallMs } from '../src/game/elements';
 import { GameEngine } from '../src/game/GameEngine';
 import { interpretSpell } from '../src/interpreter/SpellInterpreter';
 import { castNow, freezeEnemy, quietEngine } from './helpers';
@@ -331,44 +332,36 @@ describe('GameEngine - 勝敗', () => {
   });
 });
 
-describe('GameEngine - 敵の魔力', () => {
-  it('敵もプレイヤーと同じルール（最大300・毎秒8回復）で魔力を持つ', () => {
-    const e = new GameEngine(1);
-    expect(e.s.enemyMana.max).toBe(300);
-    expect(e.s.enemyMana.regenPerSec).toBe(8);
-  });
-
-  it('攻撃・移動・防御で魔力を払う', () => {
+describe('GameEngine - 敵の行動（魔力なし）', () => {
+  it('魔力に関係なく攻撃する', () => {
     const e = new GameEngine(3);
-    e.enemyAI.nextAction = 'attack';
-    e.enemyAI.nextThinkAt = 100;
-    const before = e.s.enemyMana.current;
-    e.advance(150);
-    expect(e.s.attacks.some((a) => a.owner === 'enemy')).toBe(true);
-    expect(e.s.enemyMana.current).toBeLessThan(before);
-  });
-
-  it('魔力が足りないと攻撃できず、溜める', () => {
-    const e = new GameEngine(3);
-    e.s.enemyMana.current = 10;
     e.enemyAI.nextAction = 'attack';
     e.enemyAI.nextThinkAt = 100;
     e.advance(150);
-    expect(e.s.attacks.some((a) => a.owner === 'enemy')).toBe(false);
-    expect(e.s.logger.has(/魔力を溜めている/)).toBe(true);
+    expect(e.s.attacks.some((a) => a.owner === 'enemy')).toBe(true);
   });
 
-  it('魔力が足りないと回避もできない', () => {
-    const e = new GameEngine(3);
-    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
-    e.s.enemyMana.current = 0;
-    e.s.enemyMana.regen = () => {};
-    e.s.enemy.hp = e.s.enemy.maxHp = 9999; // 途中で倒しきらないように
-    const pos = { ...e.s.enemy.pos };
-    for (let i = 0; i < 5; i++) {
-      castNow(e, 'ファイア');
-      e.advance(1500);
+  it('行動の間隔は毎回ゆらぐが、決めた範囲（±30%）に収まる', () => {
+    const e = new GameEngine(5);
+    e.s.enemy.hp = e.s.enemy.maxHp = 99999;
+    const gaps: number[] = [];
+    let last = e.enemyAI.nextThinkAt;
+    for (let t = 0; t < 60000 && gaps.length < 20; t += 50) {
+      e.advance(50);
+      if (e.enemyAI.nextThinkAt !== last) {
+        gaps.push(e.enemyAI.nextThinkAt - e.s.time);
+        last = e.enemyAI.nextThinkAt;
+      }
     }
-    expect(e.s.enemy.pos).toEqual(pos);
+    const base = e.s.enemyThinkMs;
+    expect(new Set(gaps).size).toBeGreaterThan(3);
+    for (const g of gaps) expect(g).toBeLessThanOrEqual(Math.round(base * 1.3) + 50);
+  });
+
+  it('詠唱妨害の魔法が当たると、敵の次の行動が遅れる', () => {
+    const e = new GameEngine(3);
+    e.enemyAI.nextThinkAt = 5000;
+    e.enemyAI.stall(stallMs(40));
+    expect(e.enemyAI.nextThinkAt).toBe(6000);
   });
 });

@@ -31,7 +31,7 @@ export interface Effects {
   shock?: boolean;
   /** 与えたダメージのこの割合だけ HP を回復（吸収） */
   drain?: number;
-  /** 命中すると敵の魔力をこれだけ削る */
+  /** 命中すると敵の詠唱を乱し、次の行動を遅らせる（stallMs で秒に直す。名前は昔「魔力破壊」だった名残） */
   manaBreak?: number;
   /** 敵の防御結界を無視する */
   pierce?: boolean;
@@ -72,7 +72,7 @@ const RAW = {
   aqua_lance: { name: 'アクアランス', words: ['アクアランス', 'aqualance'], branch: 'water', shape: { k: 'col', w: 1 }, damage: 15, cost: 36, effects: { wet: true }, summary: '水の槍で縦一列を貫き、濡らす。' },
   aqua_ring: { name: 'アクアリング', words: ['アクアリング', 'aquaring'], branch: 'water', shape: { k: 'ring', r: 1 }, damage: 14, cost: 34, effects: { wet: true }, summary: '照準の周りの8マスを水の輪で囲む。逃げ道をふさぐ。' },
   tidal: { name: 'タイダル', words: ['タイダルウェーブ', 'タイダル', 'tidal'], branch: 'water', shape: { k: 'row', w: 3 }, damage: 10, cost: 48, effects: { wet: true }, summary: '横3列を大波が押し流し、すべて濡らす。' },
-  maelstrom: { name: 'メイルシュトローム', words: ['メイルシュトローム', 'maelstrom'], branch: 'water', shape: { k: 'square', r: 2 }, damage: 18, cost: 70, effects: { wet: true, manaBreak: 30 }, castExtraMs: 300, summary: '5×5の大渦。敵の魔力も渦に飲み込む。' },
+  maelstrom: { name: 'メイルシュトローム', words: ['メイルシュトローム', 'maelstrom'], branch: 'water', shape: { k: 'square', r: 2 }, damage: 18, cost: 70, effects: { wet: true, manaBreak: 30 }, castExtraMs: 300, summary: '5×5の大渦。敵の詠唱も渦に飲み込む。' },
   deep_requiem: { name: 'ディープブルー・レクイエム', words: ['ディープブルーレクイエム'], branch: 'water', shape: { k: 'board' }, damage: 30, cost: 170, effects: { wet: true }, castExtraMs: 1500, ultimate: true, summary: '深海の鎮魂歌。敵の盤面すべてを沈め、濡らす。' },
   // ================================================================ 炎
   fire: { name: 'ファイア', words: ['ファイア', 'ファイアー', 'ファイヤ', 'ファイヤー', 'フレイム', 'fire', 'flame'], branch: 'fire', shape: { k: 'single' }, damage: 30, cost: 40, effects: { melt: true }, summary: '照準の1マスを焼く。単体の威力が高い。' },
@@ -106,15 +106,15 @@ const RAW = {
   earth: { name: 'アース', words: ['アース', 'ストーン', 'earth', 'stone'], branch: 'earth', shape: { k: 'col', w: 1 }, damage: 14, cost: 32, summary: '縦一列を岩柱で貫く。' },
   rock_blast: { name: 'ロックブラスト', words: ['ロックブラスト', 'rockblast'], branch: 'earth', shape: { k: 'single' }, damage: 28, cost: 42, effects: { pierce: true }, summary: '岩塊を撃ち込む。防御結界を貫く。' },
   quake: { name: 'クエイク', words: ['クエイク', 'quake'], branch: 'earth', shape: { k: 'col', w: 3 }, damage: 13, cost: 46, summary: '縦3列を揺らす地震。' },
-  gaia: { name: 'ガイアプレス', words: ['ガイアプレス', 'gaiapress'], branch: 'earth', shape: { k: 'square', r: 2 }, damage: 20, cost: 72, effects: { manaBreak: 40 }, castExtraMs: 400, summary: '大地の重圧で5×5を押しつぶし、魔力も削る。' },
-  terra_end: { name: 'エンド・オブ・ジ・アース', words: ['エンドオブジアース'], branch: 'earth', shape: { k: 'board' }, damage: 45, cost: 180, effects: { manaBreak: 120 }, castExtraMs: 1600, ultimate: true, summary: '大地の終焉。盤面すべてを砕き、敵の魔力を大きく削る。' },
+  gaia: { name: 'ガイアプレス', words: ['ガイアプレス', 'gaiapress'], branch: 'earth', shape: { k: 'square', r: 2 }, damage: 20, cost: 72, effects: { manaBreak: 40 }, castExtraMs: 400, summary: '大地の重圧で5×5を押しつぶし、敵の動きを止める。' },
+  terra_end: { name: 'エンド・オブ・ジ・アース', words: ['エンドオブジアース'], branch: 'earth', shape: { k: 'board' }, damage: 45, cost: 180, effects: { manaBreak: 120 }, castExtraMs: 1600, ultimate: true, summary: '大地の終焉。盤面すべてを砕き、敵の動きを大きく止める。' },
   // ================================================================ 光
   holy: { name: 'ホーリー', words: ['ホーリー', 'holy'], branch: 'holy', shape: { k: 'cross', r: 1 }, damage: 20, cost: 50, effects: { drain: 0.3 }, summary: '十字の聖光。与えたダメージの30%を回復。' },
   judgment: { name: 'ジャッジメント', words: ['ジャッジメント', 'judgment', 'judgement'], branch: 'holy', shape: { k: 'col', w: 1 }, damage: 24, cost: 54, effects: { pierce: true, drain: 0.2 }, summary: '縦一列への審判。結界を貫き、20%を回復。' },
   sanctuary: { name: 'セイクリッド・サンクチュアリ', words: ['セイクリッドサンクチュアリ'], branch: 'holy', shape: { k: 'board' }, damage: 35, cost: 175, effects: { drain: 0.5 }, castExtraMs: 1500, ultimate: true, summary: '聖域の顕現。盤面すべてを浄化し、50%を回復。' },
   // ================================================================ 闇
-  shadow: { name: 'シャドウ', words: ['シャドウ', 'シャドー', 'shadow'], branch: 'dark', shape: { k: 'x' }, damage: 18, cost: 42, effects: { manaBreak: 20 }, summary: '斜め2本の影。敵の魔力を削る。' },
-  dark_bolt: { name: 'ダークボルト', words: ['ダークボルト', 'darkbolt'], branch: 'dark', shape: { k: 'single' }, damage: 28, cost: 44, effects: { pierce: true, manaBreak: 20 }, summary: '闇の矢。結界を貫き、魔力を削る。' },
+  shadow: { name: 'シャドウ', words: ['シャドウ', 'シャドー', 'shadow'], branch: 'dark', shape: { k: 'x' }, damage: 18, cost: 42, effects: { manaBreak: 20 }, summary: '斜め2本の影。敵の詠唱を乱す。' },
+  dark_bolt: { name: 'ダークボルト', words: ['ダークボルト', 'darkbolt'], branch: 'dark', shape: { k: 'single' }, damage: 28, cost: 44, effects: { pierce: true, manaBreak: 20 }, summary: '闇の矢。結界を貫き、詠唱を乱す。' },
   drain: { name: 'ドレイン', words: ['ドレイン', 'drain'], branch: 'dark', shape: { k: 'single' }, damage: 20, cost: 46, effects: { drain: 1 }, summary: '与えたダメージと同じだけ HP を吸い取る。' },
   eclipse: { name: 'エクリプス', words: ['エクリプス', 'eclipse'], branch: 'dark', shape: { k: 'ring', r: 2 }, damage: 30, cost: 66, effects: { manaBreak: 50 }, summary: '日蝕の輪。照準から2マス離れた輪を闇が覆う。' },
   crypt_nova: { name: 'クリプス・ノヴァ', words: ['クリプスノヴァ', 'クリプスノバ'], branch: 'dark', shape: { k: 'random', n: 10, r: 3 }, damage: 26, cost: 110, effects: { pierce: true }, castExtraMs: 800, summary: '冥府の新星。周囲7×7に10の闇が炸裂する。' },
@@ -122,11 +122,11 @@ const RAW = {
   memento_mori: { name: 'メメント・モリ', words: ['メメントモリ', 'mementomori'], branch: 'dark', shape: { k: 'board' }, damage: 45, cost: 170, effects: { execute: { below: 0.4, mult: 2.5 }, manaBreak: 100 }, castExtraMs: 1800, ultimate: true, summary: '死を想え。弱った敵（HP40%以下）には2.5倍の死の宣告。とどめの魔法。' },
   veni_vidi_vici: { name: 'ウェニー・ウィディー・ウィキー', words: ['ウェニーウィディーウィキー', 'ウェニウィディウィキ', 'ウェーニーウィーディーウィーキー', 'ヴェニヴィディヴィキ', 'ヴェニーヴィディーヴィキー', 'ベニビディビキ', 'ベニービディービキー', 'ウェイニービーディウィーキー', 'ウェイニービディウィキ', 'venividivici'], branch: 'hybrid', shape: { k: 'single' }, damage: 0, cost: 60, effects: { selfBuff: 1.5 }, castExtraMs: 500, oncePerBattle: true, summary: '「来た、見た、勝った」（カエサル）。勝利を宣言し、この戦闘のあいだ攻撃力が1.5倍になる。1回の戦闘で1度だけ。' },
   deus_ex_machina: { name: 'デウス・エクス・マキナ', words: ['デウスエクスマキナ', 'deusexmachina'], branch: 'hybrid', shape: { k: 'board' }, damage: 0, cost: 100, effects: { halve: true }, castExtraMs: 1000, ultimate: true, oncePerBattle: true, summary: '機械仕掛けの神。物語を無理やり終わらせる神が降り、敵の今のHPを半分にする。1回の戦闘で1度だけ。' },
-  fiat_nox: { name: 'フィアト・ノクス', words: ['フィアトノクス', 'フィアットノクス', 'フィアトノックス', 'フィアットノックス', 'fiatnox'], branch: 'dark', shape: { k: 'board' }, damage: 999, cost: 270, effects: { pierce: true, manaBreak: 9999, freeze: 3000, drain: 0.3 }, castExtraMs: 3200, ultimate: true, summary: '「闇あれ」（Fiat nox）。神が「光あれ」で世界を始めたように、この一言で世界を終わらせる。時を止め、敵の魔力を消し去り、盤面すべてを闇に還す真の最強魔法。' },
+  fiat_nox: { name: 'フィアト・ノクス', words: ['フィアトノクス', 'フィアットノクス', 'フィアトノックス', 'フィアットノックス', 'fiatnox'], branch: 'dark', shape: { k: 'board' }, damage: 999, cost: 270, effects: { pierce: true, manaBreak: 9999, freeze: 3000, drain: 0.3 }, castExtraMs: 3200, ultimate: true, summary: '「闇あれ」（Fiat nox）。神が「光あれ」で世界を始めたように、この一言で世界を終わらせる。時を止め、盤面すべてを闇に還す真の最強魔法。' },
   // ================================================================ 合体魔法（2つの枝を極めると覚えられる）
   steam: { name: 'スチームバースト', words: ['スチームバースト', 'steamburst'], branch: 'hybrid', shape: { k: 'square', r: 1 }, damage: 22, cost: 56, effects: { wet: true, melt: true }, summary: '水と炎の合体魔法。3×3の蒸気爆発で濡らす。' },
   storm: { name: 'サンダーストーム', words: ['サンダーストーム', 'thunderstorm'], branch: 'hybrid', shape: { k: 'random', n: 6, r: 2 }, damage: 20, cost: 62, effects: { wet: true, shock: true }, summary: '水と雷の合体魔法。濡らしながら落ちるので必ず感電する。' },
-  sandstorm: { name: 'サンドストーム', words: ['サンドストーム', 'sandstorm'], branch: 'hybrid', shape: { k: 'row', w: 3 }, damage: 16, cost: 60, effects: { manaBreak: 30 }, summary: '風と土の合体魔法。横3列の砂嵐で魔力を削る。' },
+  sandstorm: { name: 'サンドストーム', words: ['サンドストーム', 'sandstorm'], branch: 'hybrid', shape: { k: 'row', w: 3 }, damage: 16, cost: 60, effects: { manaBreak: 30 }, summary: '風と土の合体魔法。横3列の砂嵐で敵の詠唱を乱す。' },
   frost_nova: { name: 'フロストノヴァ', words: ['フロストノヴァ', 'フロストノバ'], branch: 'hybrid', shape: { k: 'square', r: 2 }, damage: 12, cost: 66, effects: { freeze: 2000 }, summary: '氷と風の合体魔法。5×5を凍てつかせる。' },
   chaos: { name: 'カオス・ディザスター', words: ['カオスディザスター'], branch: 'hybrid', shape: { k: 'board' }, damage: 60, cost: 200, effects: { pierce: true, drain: 0.3 }, castExtraMs: 2000, ultimate: true, summary: '光と闇の合体究極魔法。混沌が盤面を飲み込む。' },
 } satisfies Record<string, RawDef>;
@@ -180,7 +180,7 @@ function effectsLabel(e: Effects | undefined): string {
   if (e.melt) out.push('凍結中の敵に1.5倍');
   if (e.shock) out.push('濡れたマスの敵に2倍');
   if (e.drain) out.push(`ダメージの${Math.round(e.drain * 100)}%を回復`);
-  if (e.manaBreak) out.push(e.manaBreak >= 9999 ? '敵の魔力をすべて消す' : `敵の魔力-${e.manaBreak}`);
+  if (e.manaBreak) out.push(`敵の行動を${(stallMs(e.manaBreak) / 1000).toFixed(1)}秒遅らせる`);
   if (e.pierce) out.push('防御結界を貫く');
   if (e.selfBuff) out.push(`この戦闘のあいだ攻撃力${e.selfBuff}倍（攻撃はしない）`);
   if (e.halve) out.push('命中すると敵の今のHPを半分にする');
@@ -232,3 +232,8 @@ export const ELEMENT_RULES = {
   /** 1回の詠唱で複数の攻撃を唱えたとき、2つ目以降の着弾をずらす (ms) */
   CHAIN_STAGGER_MS: 450,
 } as const;
+
+/** 詠唱妨害で敵の行動が遅れる時間（ms）。manaBreak 20 → 0.5秒、50 → 1.3秒、120 以上 → 3秒 */
+export function stallMs(manaBreak: number): number {
+  return Math.round(Math.min(manaBreak, 120) * 25);
+}

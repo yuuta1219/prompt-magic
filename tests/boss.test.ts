@@ -33,6 +33,18 @@ describe('ボスのギミック', () => {
     expect(list.length).toBeGreaterThanOrEqual(4);
     expect(new Set(list.map((a) => a.label)).size).toBeGreaterThanOrEqual(2);
   });
+  it('負けイベのオラクル: 倒せず、50秒すぎると最後の術式で必ず負ける', () => {
+    const e = new GameEngine(2, { stage: 99, boss: 'oracle' });
+    e.reset();
+    expect(e.s.enemy.maxHp).toBeGreaterThan(10000);
+    e.s.player.hp = e.s.player.maxHp = 99999; // 途中では倒れないようにして、最後の術式まで進める
+    for (let t = 0; t < 90_000 && e.s.phase === 'battle'; t += 50) {
+      e.advance(50);
+      if (e.s.logger.has(/最終術式/)) break;
+    }
+    expect(e.s.time).toBeGreaterThanOrEqual(50_000);
+    expect(e.s.attacks.some((a) => a.label === '最終術式・全域消去' && a.damage >= 9999)).toBe(true);
+  });
   it('群れ: 1体倒すと次が出てきて、全部倒すまで勝ちにならない', () => {
     const e = new GameEngine(1, { stage: 6, units: 3 });
     e.reset();

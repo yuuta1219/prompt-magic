@@ -31,6 +31,9 @@ export const BOSS_MOVE_NAMES: Record<BossKind, string[]> = {
   'oracle-final': ['三つ首の咆哮', '電波塔の影', '炎上', '発車ベル'],
 };
 
+/** 負けイベントのオラクルが、最後の術式（必ず負ける）を唱える時刻 */
+export const ORACLE_FINAL_AT = 50_000;
+
 interface Pattern {
   label: string;
   shape: Shape;
@@ -63,6 +66,11 @@ export function enemyGuardCost(): number {
 
 export class EnemyAI {
   nextThinkAt = 1200;
+  /** 負けイベントのオラクル: 何回目の同時詠唱か / 最後の術式を唱えたか */
+  private volleys = 0;
+  private finalCast = false;
+  /** ボスが次に大技を使えるようになる時刻 */
+  bossReadyAt = 4000;
   nextAction: EnemyAction = 'move';
   plannedMove: Vec;
   /** 予定された回避 */
@@ -99,11 +107,7 @@ export class EnemyAI {
     if (this.dodgePlan && s.time >= this.dodgePlan.at) {
       const to = this.dodgePlan.to;
       this.dodgePlan = null;
-      const cost = enemyMoveCost(1, true);
-      if (!s.enemyMana.canAfford(cost)) {
-        s.log('enemy', '敵は回避しようとしたが魔力が足りない');
-      } else if (!s.isDanger('enemy', to)) {
-        s.enemyMana.spend(cost);
+      if (!s.isDanger('enemy', to)) {
         s.enemy.pos = to;
         s.log('enemy', `敵は予兆を察知して (${to.x},${to.y}) へ回避した`);
         this.plannedMove = this.planMove(to);
@@ -112,18 +116,16 @@ export class EnemyAI {
 
     if (s.time < this.nextThinkAt) return;
 
-    // 魔力が足りない行動はできない（足りなければ、できる行動に切り替える／溜める）
+    // 敵は魔力を使わない。決めておいた行動をそのまま行う
     const action = this.nextAction;
-    let done: boolean;
-    if (action === 'attack' && !this.isCasting) done = this.castAttack(); // 足りなければ移動せずに溜める
-    else if (action === 'guard') done = this.guard();
-    else done = this.move(true);
-    if (!done) s.log('enemy', `敵は魔力を溜めている（${Math.floor(s.enemyMana.current)}/${s.enemyMana.max}）`);
+    if (action === 'attack' && !this.isCasting) this.castAttack();
+    else if (action === 'guard') this.guard();
+    else this.move();
 
-    // 暴走中は思考間隔が短くなる（ステージが上がると全体的に短くなる）
+    // 行動の間隔はステージで決まり、毎回 ±30% ゆらぐ（暴走中は短くなる）
     const base = s.enemyThinkMs;
     const interval = this.enraged ? Math.round(base * (ENEMY.ENRAGED_THINK_INTERVAL_MS / ENEMY.THINK_INTERVAL_MS)) : base;
-    this.nextThinkAt = s.time + interval;
+    this.nextThinkAt = s.time + Math.round(interval * (0.7 + s.rng.next() * 0.6));
     this.nextAction = this.decideNext();
   }
 
@@ -148,40 +150,33 @@ export class EnemyAI {
     return GridSystem.clamp({ x: from.x + 1, y: from.y });
   }
 
-  /** @param keepReserve 動いたあとも一番安い攻撃1回分の魔力が残るときだけ動く */
-  private move(keepReserve = false): boolean {
+  private move(): boolean {
     const s = this.s;
-    const from = s.enemy.pos;
-    const cells = Math.max(Math.abs(this.plannedMove.x - from.x), Math.abs(this.plannedMove.y - from.y));
-    const cost = enemyMoveCost(cells);
-    const reserve = keepReserve ? Math.min(...PATTERNS.map(enemyAttackCost)) : 0;
-    if (!s.enemyMana.canAfford(cost + reserve)) return false;
-    s.enemyMana.spend(cost);
     s.enemy.pos = { ...this.plannedMove };
-    s.log('enemy', `敵が (${s.enemy.pos.x},${s.enemy.pos.y}) へ移動（魔力-${cost}）`);
+    s.log('enemy', `敵が (${s.enemy.pos.x},${s.enemy.pos.y}) へ移動`);
     this.plannedMove = this.planMove(s.enemy.pos);
     return true;
   }
 
   private guard(): boolean {
     const s = this.s;
-    const cost = enemyGuardCost();
-    if (!s.enemyMana.spend(cost)) return false;
     s.enemy.shield = { reduction: ENEMY.GUARD_REDUCTION, until: s.time + ENEMY.GUARD_DURATION_MS };
-    s.log('enemy', `敵が防御結界を展開（${Math.round(ENEMY.GUARD_REDUCTION * 100)}%軽減／魔力-${cost}）`);
+    s.log('enemy', `敵が防御結界を展開（${Math.round(ENEMY.GUARD_REDUCTION * 100)}%軽減）`);
     return true;
   }
 
-  /** 払える攻撃の中からランダムに選ぶ。どれも払えなければ false */
+  /** 攻撃をランダムに選んで唱える */
   private castAttack(): boolean {
     const s = this.s;
-    // ボスは、半分くらいの確率で大技（負けイベントのオラクルは毎回）
-    if (s.boss && (s.boss === 'oracle' || s.rng.chance(this.enraged ? 0.65 : 0.5)) && this.bossMove()) return true;
-    const affordable = PATTERNS.filter((p) => s.enemyMana.canAfford(enemyAttackCost(p)));
-    if (affordable.length === 0) return false;
-    const p = s.rng.pick(affordable);
-    const cost = enemyAttackCost(p);
-    s.enemyMana.spend(cost);
+    // ボスは、大技の待ち時間が明けていれば大技（負けイベントのオラクルは毎回）
+    if (s.boss && s.time >= this.bossReadyAt && (s.boss === 'oracle' || s.rng.chance(0.7))) {
+      this.bossMove();
+      // 大技のあとは、しばらく普通の攻撃だけ（切れ目なく大技が続くと避けようがない）
+      const [lo, hi] = s.boss === 'oracle' ? [6000, 8000] : this.enraged ? [7000, 10000] : [8000, 12000];
+      this.bossReadyAt = s.time + s.rng.int(lo, hi);
+      return true;
+    }
+    const p = s.rng.pick(PATTERNS);
     // 照準は概ねプレイヤーの位置。少しブレる
     const aim = GridSystem.clamp({
       x: s.player.pos.x + (s.rng.chance(0.25) ? s.rng.int(-1, 1) : 0),
@@ -191,7 +186,7 @@ export class EnemyAI {
     const castMs = Math.round(s.rng.int(ENEMY.CAST_MIN_MS, ENEMY.CAST_MAX_MS) * p.castScale);
     const dmg = Math.round(p.damage * s.enemyPower * (this.enraged ? 1.2 : 1));
     const atk = s.addAttack('enemy', 'player', cells, dmg, p.element, castMs, p.label);
-    s.log('enemy', `敵が「${p.label}」の詠唱を開始！ ${(castMs / 1000).toFixed(1)}秒後に着弾（魔力-${cost}）`);
+    s.log('enemy', `敵が「${p.label}」の詠唱を開始！ ${(castMs / 1000).toFixed(1)}秒後に着弾`);
     s.emit({ type: 'ENEMY_CAST_START', attack: atk });
     return true;
   }
@@ -207,18 +202,18 @@ export class EnemyAI {
   /** 大技を1つ予告する（ダメージ・詠唱時間はステージの強さに合わせる） */
   private bossHit(cells: Vec[], baseDmg: number, element: AttackElement, castMs: number, label: string): void {
     const s = this.s;
-    const dmg = Math.round(baseDmg * s.enemyPower * (this.enraged ? 1.15 : 1));
+    // 負けイベントのオラクルはステージの強さを掛けない（いろんな魔法が一度に来るが、数発では倒れない）
+    // 最終オラクルは全ボスの大技を使うぶん、1つずつは少し軽く
+    const scale = s.boss === 'oracle-final' ? 0.7 : 1;
+    const dmg = s.boss === 'oracle' ? Math.round(baseDmg) : Math.round(baseDmg * scale * s.enemyPower * (this.enraged ? 1.15 : 1));
     const atk = s.addAttack('enemy', 'player', cells.filter(this.inGrid), dmg, element, castMs, label);
     s.emit({ type: 'ENEMY_CAST_START', attack: atk });
   }
 
-  /** ボスの大技。魔力が足りなければ false（ふつうの攻撃に戻る） */
+  /** ボスの大技 */
   private bossMove(): boolean {
     const s = this.s;
     const kind = s.boss!;
-    const cost = COST.ATTACK_BASE + 50;
-    if (kind !== 'oracle' && !s.enemyMana.canAfford(cost)) return false;
-    if (kind !== 'oracle') s.enemyMana.spend(cost);
     const p = s.player.pos;
     const base = s.rng.int(ENEMY.CAST_MIN_MS, ENEMY.CAST_MAX_MS);
     const pick = kind === 'oracle-final' || kind === 'chimera' ? s.rng.pick(['cerberus', 'tower', 'ghost', 'stationmaster'] as const) : kind;
@@ -277,21 +272,30 @@ export class EnemyAI {
         // 魔法陣の十字か斜め（盤面の端から端まで）
         const diag = s.rng.chance(0.5);
         const cells = this.all().filter((c) => (diag ? Math.abs(c.x - p.x) === Math.abs(c.y - p.y) : c.x === p.x || c.y === p.y));
-        this.bossHit(cells, 22, 'ice', base, diag ? '魔法陣の斜め' : '魔法陣の十字');
+        this.bossHit(cells, 14, 'ice', base, diag ? '魔法陣の斜め' : '魔法陣の十字');
         say(diag ? '魔法陣の斜め' : '魔法陣の十字', '盤面の端まで届く');
         return true;
       }
       case 'oracle': {
-        // 全術式同時詠唱：あらゆる魔法を一度に。負けイベント
-        const n = 3 + s.rng.int(0, 2);
+        // 全術式同時詠唱：あらゆる魔法を一度に。負けイベント。
+        // 1発ずつは軽いが、唱えるたびに同時に来る数が増え、50秒たつと盤面すべてを消す最後の術式で終わる
+        if (this.finalCast) return true;
+        if (s.time >= ORACLE_FINAL_AT) {
+          this.finalCast = true;
+          this.bossHit(this.all(), 9999, 'dark', 4500, '最終術式・全域消去');
+          say('最終術式・全域消去', '盤面のすべてが消える。逃げ場は、ない');
+          return true;
+        }
+        this.volleys++;
+        const n = Math.min(9, 2 + this.volleys);
         for (let i = 0; i < n; i++) {
           const pat = s.rng.pick(PATTERNS);
           const aim = GridSystem.clamp({ x: p.x + s.rng.int(-2, 2), y: p.y + s.rng.int(-2, 2) });
-          this.bossHit(GridSystem.shapeCells(aim, pat.shape), pat.damage * 1.6, pat.element, Math.round(base * 0.7) + i * 250, pat.label);
+          this.bossHit(GridSystem.shapeCells(aim, pat.shape), Math.round(pat.damage * 0.6), pat.element, Math.round(base * 0.7) + i * 250, pat.label);
         }
         const band = s.rng.int(0, 2);
-        this.bossHit(this.all().filter((c) => Math.floor(c.x / 3) === band), 20, 'dark', Math.round(base * 0.9), '断罪の列');
-        say('全術式同時詠唱', 'あなたが唱えてきた魔法が、全部同時に来る');
+        this.bossHit(this.all().filter((c) => Math.floor(c.x / 3) === band), 5, 'dark', Math.round(base * 0.9), '断罪の列');
+        say('全術式同時詠唱', `あなたが唱えてきた魔法が、${n}つ同時に来る`);
         return true;
       }
     }
@@ -310,6 +314,12 @@ export class EnemyAI {
     if (safe.length === 0) return;
     const reactAt = s.time + (atk.resolveAt - s.time) * (0.3 + s.rng.next() * 0.4);
     this.dodgePlan = { at: reactAt, to: s.rng.pick(safe) };
+  }
+
+  /** 詠唱を乱された（魔力破壊の代わり）: 次の行動と大技を ms だけ遅らせる */
+  stall(ms: number): void {
+    this.nextThinkAt += ms;
+    this.bossReadyAt += ms;
   }
 
   /** 凍結した: 解けるまで次の行動を遅らせる */

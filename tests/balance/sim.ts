@@ -18,7 +18,7 @@ import type { BossKind } from '../../src/game/EnemyAI';
 import { INITIAL_UNLOCKED, SKILLS, STAGE, STAGE_RULES, canUnlock, computeLoadout, spForWin, stageStats } from '../../src/game/skills';
 
 type Bot = { name: string; latency: number; dodge: number; combo: boolean; ult: boolean; gap: number; miss: number };
-const BOTS: Bot[] = [
+export const BOTS: Bot[] = [
   { name: 'ふつう', latency: 2400, dodge: 0.6, combo: false, ult: false, gap: 1200, miss: 0.2 },
   { name: 'うまい', latency: 1400, dodge: 0.9, combo: true, ult: true, gap: 400, miss: 0.08 },
 ];
@@ -83,8 +83,8 @@ function attackChant(e: GameEngine, bot: Bot, spells: Set<SpellKey>, step: numbe
   return ELEMENTS[pool[0] ?? 'water'].name;
 }
 
-function fight(stage: number, bot: Bot, seed: number, extra: { units?: number; boss?: BossKind } = {}) {
-  const unlocked = unlockedAt(stage);
+export function fight(stage: number, bot: Bot, seed: number, extra: { units?: number; boss?: BossKind; skillsAt?: number } = {}) {
+  const unlocked = unlockedAt(extra.skillsAt ?? stage);
   const lo = computeLoadout(unlocked);
   const e = new GameEngine(seed, { loadout: lo, stage, ...extra });
   e.reset();
