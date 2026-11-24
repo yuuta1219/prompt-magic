@@ -358,7 +358,21 @@ export class GameEngine {
   private resolveAttack(a: PendingAttack): void {
     const s = this.s;
     const target = s.combatant(a.field);
-    const hit = GridSystem.contains(a.cells, target.pos);
+    // 群れの敵: リーダー以外にも、範囲に入っていた敵にはダメージ（結界や特殊効果はリーダーだけ）
+    let othersHit = false;
+    if (a.owner === 'player' && a.field === 'enemy') {
+      for (const o of s.others) {
+        if (!GridSystem.contains(a.cells, o.pos)) continue;
+        othersHit = true;
+        const d = Math.max(1, Math.round(a.damage));
+        o.hp = Math.max(0, o.hp - d);
+        s.log('magic', `💥 ${a.label}が別の敵に命中！ ${d}ダメージ${o.hp <= 0 ? '――1体たおした！' : ''}`);
+      }
+      const before = s.others.length;
+      s.others = s.others.filter((o) => o.hp > 0);
+      if (s.others.length < before) s.log('system', `☆ 残り${s.others.length + (s.enemy.hp > 0 ? 1 : 0)}体`);
+    }
+    const hit = GridSystem.contains(a.cells, target.pos) || othersHit;
     s.fx.push({ id: s.nextId(), field: a.field, cells: a.cells, element: a.element, at: s.time, hit });
     const fx = a.owner === 'player' && a.element !== 'dark' ? (ELEMENTS[a.element].effects ?? {}) : {};
 
@@ -376,8 +390,8 @@ export class GameEngine {
     if (a.owner === 'player' && a.element !== 'dark' && ELEMENTS[a.element].ultimate) s.cinematic(a.element);
     else if (a.cinematic) s.cinematic(a.cinematic);
 
-    if (!hit) {
-      s.log(a.owner === 'player' ? 'magic' : 'enemy', a.owner === 'player' ? `${a.label}は外れた` : `敵の「${a.label}」を回避した`);
+    if (!GridSystem.contains(a.cells, target.pos)) {
+      if (!othersHit) s.log(a.owner === 'player' ? 'magic' : 'enemy', a.owner === 'player' ? `${a.label}は外れた` : `敵の「${a.label}」を回避した`);
       return;
     }
 
@@ -443,15 +457,15 @@ export class GameEngine {
 
   private checkEnd(): void {
     const s = this.s;
-    if (s.enemy.hp <= 0 && s.unitsLeft > 0) {
-      // 群れの敵：1体倒したら、次の1体が別の場所に現れる
-      s.unitsLeft--;
-      s.enemy.hp = s.enemy.maxHp;
+    if (s.enemy.hp <= 0 && s.others.length > 0) {
+      // 群れの敵：リーダーが倒れたら消えて、残りの1体がリーダーになる（盤面にはもともと全員いる）
+      const next = s.others.shift()!;
+      s.enemy.hp = next.hp;
+      s.enemy.maxHp = next.maxHp;
+      s.enemy.pos = next.pos;
       s.enemy.shield = null;
-      s.enemy.frozenUntil = 0;
-      s.enemy.pos = { x: s.rng.int(1, 7), y: s.rng.int(1, 7) };
-      s.attacks = s.attacks.filter((a) => a.owner !== 'player');
-      s.log('system', `☆ 1体たおした！ 次の敵が現れた（残り${s.unitsLeft + 1}体）`);
+      s.enemy.frozenUntil = next.frozenUntil;
+      s.log('system', `☆ 1体たおした！（残り${s.others.length + 1}体）`);
       return;
     }
     if (s.enemy.hp <= 0) {

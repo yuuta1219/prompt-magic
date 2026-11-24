@@ -43,9 +43,21 @@ export class BattleState {
   readonly enemyThinkMs: number;
   /** 5戦ごとの強敵か */
   readonly elite: boolean;
-  /** 群れの敵の数と、いま戦っている1体のあとに残っている数（1体なら 1 と 0） */
+  /** 群れの敵の数（1体なら 1） */
   readonly units: number;
-  unitsLeft: number;
+  /**
+   * 群れの敵のうち、リーダー（enemy）以外でまだ生きているもの。全員が同時に盤面にいる。
+   * リーダーが倒れたら、ここから1体がリーダーになる（倒れたものから消える）
+   */
+  others: Combatant[] = [];
+  /** リーダーのほかに生きている数 */
+  get unitsLeft(): number {
+    return this.others.length;
+  }
+  /** 生きている敵ぜんぶ（リーダーが先頭） */
+  foes(): Combatant[] {
+    return [this.enemy, ...this.others];
+  }
   /** ボスのギミックの種類（ふつうの敵は undefined） */
   readonly boss?: BossKind;
 
@@ -79,10 +91,15 @@ export class BattleState {
     this.player = { hp: this.loadout.hpMax, maxHp: this.loadout.hpMax, pos: { ...PLAYER.START }, shield: null, frozenUntil: 0 };
     // 群れの敵は、全体の HP を何体かに分ける（全体は少しだけ多め）
     this.units = Math.max(1, opts.units ?? 1);
-    this.unitsLeft = this.units - 1;
     // 負けイベントのオラクルは倒せない（HP は桁ちがい）
     const unitHp = opts.boss === 'oracle' ? 99999 : this.units > 1 ? Math.round(st.enemyHp / this.units) : st.enemyHp;
     this.enemy = { hp: unitHp, maxHp: unitHp, pos: { ...ENEMY.START }, shield: null, frozenUntil: 0 };
+    // 群れのほかの敵は、リーダーと重ならない場所にばらけて立つ
+    for (let i = 1; i < this.units; i++) {
+      let pos = { x: this.rng.int(0, 8), y: this.rng.int(0, 8) };
+      for (let k = 0; k < 30 && this.foes().some((f) => f.pos.x === pos.x && f.pos.y === pos.y); k++) pos = { x: this.rng.int(0, 8), y: this.rng.int(0, 8) };
+      this.others.push({ hp: unitHp, maxHp: unitHp, pos, shield: null, frozenUntil: 0 });
+    }
     this.boss = opts.boss;
     // 負けイベントのオラクルの普通の攻撃は、第7話の敵と同じくらいの強さ（数発で倒れないように）
     this.enemyPower = opts.boss === 'oracle' ? stageStats(33).enemyPower : st.enemyPower;

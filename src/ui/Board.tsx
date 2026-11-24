@@ -16,6 +16,9 @@ const brokenSprites = new Set<string>();
 
 export function Board({ s, side, sprite }: { s: BattleState; side: Side; sprite?: string }) {
   const me = side === 'player' ? s.player : s.enemy;
+  // 敵側は群れの全員を描く（先頭がリーダー。結界・凍結はリーダーだけ）
+  const units = side === 'player' ? [s.player] : s.foes();
+  const many = side === 'enemy' && s.units > 1;
   const cells: CellInfo[][] = Array.from({ length: GRID_SIZE }, () =>
     Array.from({ length: GRID_SIZE }, () => ({ danger: null, fx: null })),
   );
@@ -43,7 +46,10 @@ export function Board({ s, side, sprite }: { s: BattleState; side: Side; sprite?
     <div className={`board board-${side}`} aria-label={side === 'player' ? 'プレイヤーフィールド' : '敵フィールド'}>
       {cells.map((row, y) =>
         row.map((cell, x) => {
-          const here = me.pos.x === x && me.pos.y === y;
+          const who = units.findIndex((u) => u.pos.x === x && u.pos.y === y);
+          const here = who !== -1;
+          const unit = units[who];
+          const lead = who === 0;
           const cls = ['cell'];
           if (here) cls.push('occupied', `occ-${side}`);
           if (side === 'enemy' && s.isWet({ x, y })) cls.push('wet');
@@ -64,7 +70,7 @@ export function Board({ s, side, sprite }: { s: BattleState; side: Side; sprite?
                   {sprite && !brokenSprites.has(sprite) ? (
                     <>
                       {/* 立ち絵に filter を付けると 3D の中で絵が切れるので、光や氷は別の部品を重ねて出す */}
-                      <span className={`sprite-aura aura-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''}`} />
+                      <span className={`sprite-aura aura-${side} ${lead && shielded ? 'shielded' : ''} ${ward ? 'warded' : ''}`} />
                       <img
                         className={`unit-sprite unit-${side}`}
                         src={`${UNIT_BASE}${sprite}.png`}
@@ -72,12 +78,18 @@ export function Board({ s, side, sprite }: { s: BattleState; side: Side; sprite?
                         draggable={false}
                         onError={() => brokenSprites.add(sprite)}
                       />
-                      {s.isFrozen(side) && <span className="sprite-ice" />}
+                      {lead && s.isFrozen(side) && <span className="sprite-ice" />}
                     </>
                   ) : (
-                    <div className={`unit unit-${side} ${shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${s.isFrozen(side) ? 'frozen' : ''}`}>
+                    <div className={`unit unit-${side} ${lead && shielded ? 'shielded' : ''} ${ward ? 'warded' : ''} ${lead && s.isFrozen(side) ? 'frozen' : ''}`}>
                       {side === 'player' ? '◆' : '✶'}
                     </div>
+                  )}
+                  {/* 群れの敵は、1体ずつ頭の上に小さな HP バー */}
+                  {many && unit && (
+                    <span className="unit-hp" aria-label={`HP ${unit.hp}/${unit.maxHp}`}>
+                      <span style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} />
+                    </span>
                   )}
                 </div>
               )}

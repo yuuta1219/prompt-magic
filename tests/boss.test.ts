@@ -79,17 +79,39 @@ describe('ボスのギミック', () => {
     expect(e.s.player.hp).toBeLessThanOrEqual(150);
     expect(e.s.player.hp).toBeGreaterThanOrEqual(149);
   });
-  it('群れ: 1体倒すと次が出てきて、全部倒すまで勝ちにならない', () => {
+  it('群れ: 全員が同時に盤面にいて、倒れたものから消え、全部倒すまで勝ちにならない', () => {
     const e = new GameEngine(1, { stage: 6, units: 3 });
     e.reset();
-    for (let k = 0; k < 2; k++) {
-      e.s.enemy.hp = 0;
-      e.advance(50);
-      expect(e.s.phase).toBe('battle');
-      expect(e.s.enemy.hp).toBe(e.s.enemy.maxHp);
-    }
+    expect(e.s.foes()).toHaveLength(3);
+    const spots = new Set(e.s.foes().map((f) => `${f.pos.x},${f.pos.y}`));
+    expect(spots.size).toBe(3); // 重ならない
+    // リーダー以外の1体が倒れると、その1体だけ消える
+    e.s.others[0].hp = 0;
+    e.s.others = e.s.others.filter((o) => o.hp > 0);
+    e.advance(50);
+    expect(e.s.foes()).toHaveLength(2);
+    // リーダーが倒れると、残りの1体がリーダーになる
+    const last = { ...e.s.others[0].pos };
+    e.s.enemy.hp = 0;
+    e.advance(50);
+    expect(e.s.phase).toBe('battle');
+    expect(e.s.foes()).toHaveLength(1);
+    expect(e.s.enemy.pos).toEqual(last);
     e.s.enemy.hp = 0;
     e.advance(50);
     expect(e.s.phase).toBe('victory');
   });
+  it('群れ: 範囲魔法は、範囲に入っている敵みんなに当たる', () => {
+    const e = new GameEngine(1, { stage: 6, units: 3 });
+    e.reset();
+    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
+    e.enemyAI.onIncoming = () => {};
+    const hps = e.s.foes().map((f) => f.hp);
+    const all = [];
+    for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) all.push({ x, y });
+    e.s.addAttack('player', 'enemy', all, 10, 'fire', 100, 'テスト');
+    e.advance(150);
+    e.s.foes().forEach((f, i) => expect(f.hp).toBe(hps[i] - 10));
+  });
+
 });

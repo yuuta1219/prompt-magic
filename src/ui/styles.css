@@ -1491,3 +1491,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .share-close { padding: 10px 18px; border-radius: 999px; background: transparent; color: #cbb9ff; border: 1px solid rgba(203, 185, 255, 0.4); cursor: pointer; }
 .mp-share { display: inline-block; margin-left: 8px; padding: 8px 14px; border-radius: 999px; background: #fff; color: #000; font-weight: 700; font-size: 0.85rem; text-decoration: none; }
 @keyframes share-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* 群れの敵の、1体ずつの HP（頭の上） */
+.unit-hp { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -4px); width: 70%; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 120, 140, 0.6); overflow: hidden; pointer-events: none; }
+.unit-hp > span { display: block; height: 100%; background: linear-gradient(90deg, #8b1030, var(--enemy)); transition: width 0.12s linear; }

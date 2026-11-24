@@ -242,7 +242,7 @@ export function App({
   const [bgmA, bgmB] = battle.bgm ?? ['battle-1', 'battle-2'];
   useEffect(() => {
     // 勝ち負けが決まったら止める（次の画面がそれぞれの曲を流す）
-    playBgm(s.phase !== 'battle' || !sound ? null : (s.unitsLeft * s.enemy.maxHp + s.enemy.hp) <= s.units * s.enemy.maxHp * 0.5 ? bgmB : bgmA);
+    playBgm(s.phase !== 'battle' || !sound ? null : s.foes().reduce((n, f) => n + f.hp, 0) <= s.units * s.enemy.maxHp * 0.5 ? bgmB : bgmA);
   });
   // 話しはじめたら、魔法陣に魔力がたまる音
   useEffect(() => {
@@ -337,7 +337,7 @@ export function App({
         <div className="hud hud-enemy">
           <div className="hud-name">✶ {enemyName} <span className="muted">{battle.kind === 'free' ? `修練場 ステージ${s.stage}` : battle.label}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
           {s.units > 1 ? (
-            <SegBar units={s.units} left={s.unitsLeft} value={s.enemy.hp} max={s.enemy.maxHp} />
+            <SegBar units={s.units} hps={s.foes().map((f) => f.hp)} max={s.enemy.maxHp} />
           ) : (
             <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
           )}
@@ -459,20 +459,18 @@ function castColor(actions: ReturnType<typeof interpretSpell>['actions']): strin
   return '255, 209, 102';
 }
 
-/** 群れの敵の HP。1体ずつ区切ったバー：倒した分は空、いま戦っている1体は減っていき、残りは満タン */
-function SegBar({ units, left, value, max }: { units: number; left: number; value: number; max: number }) {
-  const beaten = units - left - 1;
+/** 群れの敵の HP。1体ずつ区切ったバー：倒した分は空、生きている敵はそれぞれの HP */
+function SegBar({ units, hps, max }: { units: number; hps: number[]; max: number }) {
+  const down = units - hps.length;
+  const cells = [...Array.from({ length: down }, () => 0), ...hps];
   return (
     <div className="bar hp-enemy seg" style={{ '--n': units } as React.CSSProperties}>
-      {Array.from({ length: units }, (_, i) => {
-        const p = i < beaten ? 0 : i === beaten ? Math.max(0, Math.min(1, value / max)) : 1;
-        return (
-          <div key={i} className={`seg-cell ${i < beaten ? 'down' : i === beaten ? 'now' : ''}`}>
-            <div className="fill" style={{ width: `${p * 100}%` }} />
-          </div>
-        );
-      })}
-      <span className="bar-label">のこり {left + 1}/{units}体　HP {value}/{max}</span>
+      {cells.map((hp, i) => (
+        <div key={i} className={`seg-cell ${i < down ? 'down' : ''}`}>
+          <div className="fill" style={{ width: `${Math.max(0, Math.min(1, hp / max)) * 100}%` }} />
+        </div>
+      ))}
+      <span className="bar-label">のこり {hps.length}/{units}体　HP {hps.reduce((a, b) => a + b, 0)}/{max * units}</span>
     </div>
   );
 }

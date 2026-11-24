@@ -141,6 +141,13 @@ export class EnemyAI {
     else if (action === 'guard') this.guard();
     else this.move();
 
+    // 群れのほかの敵も、ときどき1マス動く（攻撃はリーダーがまとめて行う）
+    for (const o of s.others) {
+      if (!s.rng.chance(0.5)) continue;
+      const to = GridSystem.clamp({ x: o.pos.x + s.rng.int(-1, 1), y: o.pos.y + s.rng.int(-1, 1) });
+      if (!s.foes().some((f) => f.pos.x === to.x && f.pos.y === to.y)) o.pos = to;
+    }
+
     // 行動の間隔はステージで決まり、毎回 ±30% ゆらぐ（暴走中は短くなる）
     const base = s.enemyThinkMs;
     const interval = this.enraged ? Math.round(base * (ENEMY.ENRAGED_THINK_INTERVAL_MS / ENEMY.THINK_INTERVAL_MS)) : base;
@@ -171,6 +178,11 @@ export class EnemyAI {
 
   private move(): boolean {
     const s = this.s;
+    // 群れの仲間がいるマスには入らない（次の行き先を決め直すだけ）
+    if (s.others.some((o) => o.pos.x === this.plannedMove.x && o.pos.y === this.plannedMove.y)) {
+      this.plannedMove = this.planMove(s.enemy.pos);
+      return false;
+    }
     s.enemy.pos = { ...this.plannedMove };
     s.log('enemy', `敵が (${s.enemy.pos.x},${s.enemy.pos.y}) へ移動`);
     this.plannedMove = this.planMove(s.enemy.pos);
