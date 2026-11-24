@@ -13,7 +13,7 @@ import { useSpeech } from './useSpeech';
 import { CastBanner, ChantPanel, type ChantFx } from './Chant';
 import { playSfx, saySpells, setSoundOn, soundOn, type Sfx } from './sound';
 import { vfxKind } from './Vfx';
-import { BattleBgm } from './bgm';
+import { playBgm, type BgmName } from './bgm';
 import { CostPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
 
 
@@ -45,6 +45,8 @@ export interface BattleSpec {
   label: string;
   /** 敵の画像（public/units/ の下、拡張子なし） */
   enemySprite?: string;
+  /** BGM（前半, 敵の HP 50% 以下）。省略すると battle-1 → battle-2 */
+  bgm?: [BgmName, BgmName];
 }
 
 /** 主人公の画像 */
@@ -229,11 +231,11 @@ export function App({
     prev.current = { pos, hp: s.player.hp, shield: !!s.player.shield, phase: s.phase, impact: imp };
   });
   // ---- BGM: 前半は歌なし、敵の HP が半分を切ったら歌ありのアップテンポな曲へ
-  const bgm = useMemo(() => new BattleBgm(), []);
+  const [bgmA, bgmB] = battle.bgm ?? ['battle-1', 'battle-2'];
   useEffect(() => {
-    bgm.play(s.phase !== 'battle' || !sound ? null : s.enemy.hp <= s.enemy.maxHp * 0.5 ? 'battle-2' : 'battle-1');
+    // 勝ち負けが決まったら止める（次の画面がそれぞれの曲を流す）
+    playBgm(s.phase !== 'battle' || !sound ? null : s.enemy.hp <= s.enemy.maxHp * 0.5 ? bgmB : bgmA);
   });
-  useEffect(() => () => bgm.stop(), [bgm]);
   // 話しはじめたら、魔法陣に魔力がたまる音
   useEffect(() => {
     if (speech.interim) playSfx('chant', 0.25);

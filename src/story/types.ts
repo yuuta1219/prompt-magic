@@ -23,6 +23,8 @@ export interface StoryPage {
 export interface StoryScene {
   id: string;
   pages: StoryPage[];
+  /** この紙芝居で流す BGM（public/bgm/ の名前） */
+  bgm?: string;
 }
 
 /** すごろくの1マス = 1チャプター。紙芝居（前）→ 戦闘 → 紙芝居（後） */
@@ -42,6 +44,8 @@ export interface Chapter {
   before: StoryPage[];
   /** 勝ったあとに流す紙芝居 */
   after: StoryPage[];
+  /** BGM: 紙芝居（前・後）と戦闘（前半, 後半） */
+  bgm?: { before?: string; after?: string; battle?: [string, string] };
 }
 
 export interface Episode {

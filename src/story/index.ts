@@ -25,8 +25,8 @@ function chapterTitle(c: Chapter): StoryPage {
 }
 
 export function chapterBefore(c: Chapter): StoryScene {
-  return { id: `${c.id}-before`, pages: [chapterTitle(c), ...c.before] };
+  return { id: `${c.id}-before`, pages: [chapterTitle(c), ...c.before], bgm: c.bgm?.before };
 }
 export function chapterAfter(c: Chapter): StoryScene | null {
-  return c.after.length ? { id: `${c.id}-after`, pages: c.after } : null;
+  return c.after.length ? { id: `${c.id}-after`, pages: c.after, bgm: c.bgm?.after } : null;
 }

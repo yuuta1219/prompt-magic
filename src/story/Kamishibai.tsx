@@ -7,6 +7,7 @@ import type { StoryPage, StoryScene } from './types';
 import { VOICE_CAST, voiceKey } from './voiceKey';
 import voiceList from './voices.json';
 import { VOICE_CREDIT } from './credit';
+import { playBgm } from '../ui/bgm';
 
 /** 作ってある声（scripts/voice.mts が書く一覧）。無いセリフは鳴らさない */
 const VOICES = new Set<string>(voiceList as string[]);
@@ -77,7 +78,10 @@ export function Kamishibai({ scene, onDone }: { scene: StoryScene; onDone: () =>
   const toggleSound = () => {
     const next = !soundOn;
     setSoundOn(next);
-    if (!next) voiceRef.current?.pause();
+    if (!next) {
+      voiceRef.current?.pause();
+      playBgm(null);
+    }
     try {
       localStorage.setItem(SOUND_KEY, next ? 'on' : 'off');
     } catch {

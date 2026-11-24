@@ -10,6 +10,7 @@ import { App, type BattleSpec } from './App';
 import { Sugoroku } from './Sugoroku';
 import { SkillTree } from './SkillTree';
 import { Kamishibai } from '../story/Kamishibai';
+import { playBgm, type BgmName } from './bgm';
 import { EPISODES, chapterAfter, chapterBefore } from '../story';
 import type { Chapter, StoryScene } from '../story/types';
 import { applyDevGrant, loadProgress, markStorySeen, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
@@ -54,7 +55,7 @@ export function Game() {
     setScreen({
       k: 'story',
       scene: chapterBefore(c),
-      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, label: `チャプター${c.no} ${c.title}` } }),
+      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, bgm: c.bgm?.battle as [BgmName, BgmName] | undefined, label: `チャプター${c.no} ${c.title}` } }),
     });
 
   const startFree = () => {
@@ -76,6 +77,12 @@ export function Game() {
     if (after) setScreen({ k: 'story', scene: after, then: () => toMap(next) });
     else toMap(next);
   };
+
+  // BGM: マップはメインテーマ、紙芝居はその場面の曲（戦闘中の曲は戦闘画面が決める）
+  useEffect(() => {
+    if (screen.k === 'map') playBgm('main');
+    else if (screen.k === 'story') playBgm((screen.scene.bgm as BgmName | undefined) ?? 'underground');
+  }, [screen]);
 
   if (screen.k === 'story') return <Kamishibai key={screen.scene.id} scene={screen.scene} onDone={screen.then} />;
 
