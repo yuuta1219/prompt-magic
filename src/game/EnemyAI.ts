@@ -339,7 +339,10 @@ export class EnemyAI {
     if (!GridSystem.contains(atk.cells, s.enemy.pos)) return;
     if (s.isFrozen('enemy')) return;
     const delaySec = (atk.resolveAt - s.time) / 1000;
-    const chance = Math.min(ENEMY.DODGE_CHANCE_MAX, ENEMY.DODGE_CHANCE_PER_SEC * delaySec);
+    const late = s.stage >= ENEMY.DODGE_LATE_FROM_STAGE;
+    const chance = late
+      ? Math.min(ENEMY.DODGE_CHANCE_MAX_LATE, ENEMY.DODGE_CHANCE_PER_SEC_LATE * delaySec)
+      : Math.min(ENEMY.DODGE_CHANCE_MAX, ENEMY.DODGE_CHANCE_PER_SEC * delaySec);
     if (!s.rng.chance(chance)) return;
     const safe = GridSystem.neighbors8(s.enemy.pos).filter((c) => !GridSystem.contains(atk.cells, c));
     if (safe.length === 0) return;
