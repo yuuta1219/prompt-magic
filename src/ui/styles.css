@@ -1450,3 +1450,24 @@ span.cmd-btn, span.guide-name { cursor: default; }
 @media (prefers-reduced-motion: reduce) { .er-motes, .er-aurora { animation: none !important; } }
 .er-voice { margin-bottom: 14px; }
 .er-role { color: var(--muted); font-size: 0.8rem; }
+/* 歌詞（いちばん下、街のシルエットの上に） */
+.er-lyrics { position: absolute; left: 0; right: 0; bottom: 5%; display: flex; justify-content: center; pointer-events: none; z-index: 2; }
+.er-lyric { text-align: center; animation: er-lyric 0.9s ease-out; }
+.er-lyric .en { font-family: 'Cinzel', serif; font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.6rem); letter-spacing: 0.06em; color: #fff7e8; text-shadow: 0 0 14px rgba(255, 200, 140, 0.7), 0 0 4px #000; }
+.er-lyric .ja { margin-top: 4px; font-size: 0.85rem; letter-spacing: 0.12em; color: rgba(240, 230, 255, 0.75); text-shadow: 0 0 4px #000; }
+@keyframes er-lyric { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+.er-center { -webkit-mask-image: linear-gradient(180deg, transparent, #000 15%, #000 72%, transparent 82%); mask-image: linear-gradient(180deg, transparent, #000 15%, #000 72%, transparent 82%); }
+.er-lyric .en { font-family: Georgia, 'Times New Roman', serif; }
+/* 余韻：クレジットも絵も消えて、空だけが残る */
+.endroll.ph-after .er-center, .endroll.ph-after .er-shots, .endroll.ph-after .er-lyrics, .endroll.ph-glitch .er-center, .endroll.ph-glitch .er-shots { opacity: 0; transition: opacity 2.5s ease-out; }
+/* ジジジ：画面が乱れる */
+.endroll.ph-glitch .er-sky { animation: g-shift 0.12s steps(2) infinite; }
+.endroll.ph-glitch .er-moon.small { background: radial-gradient(circle, #fff, #ff4060 60%, #400010); box-shadow: 0 0 40px #ff2050; animation: g-blink 0.18s steps(2) infinite; }
+@keyframes g-shift { 0% { transform: translate(0, 0); filter: hue-rotate(0deg); } 50% { transform: translate(-6px, 3px); filter: hue-rotate(60deg) saturate(2); } 100% { transform: translate(5px, -2px); filter: hue-rotate(-40deg); } }
+@keyframes g-blink { 50% { opacity: 0.2; } }
+.er-glitch { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.g-noise { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 3px); mix-blend-mode: screen; animation: g-noise 0.08s steps(3) infinite; }
+@keyframes g-noise { 0% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-2px); opacity: 0.9; } 100% { transform: translateY(1px); opacity: 0.6; } }
+.g-bar { position: absolute; left: 0; right: 0; height: 6%; background: linear-gradient(90deg, rgba(255, 0, 80, 0.5), rgba(0, 255, 255, 0.4), rgba(255, 255, 255, 0.6)); mix-blend-mode: screen; animation: g-bar 0.4s steps(4) infinite; }
+.g-bar.b1 { top: 20%; } .g-bar.b2 { top: 52%; height: 3%; animation-duration: 0.27s; } .g-bar.b3 { top: 78%; height: 9%; animation-duration: 0.53s; }
+@keyframes g-bar { 0% { transform: translateX(-30%) scaleY(1); opacity: 0; } 25% { opacity: 1; } 50% { transform: translateX(20%) scaleY(0.4); } 75% { opacity: 0.3; transform: translateX(-10%) scaleY(1.6); } 100% { transform: translateX(30%); opacity: 0; } }

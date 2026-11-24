@@ -6,12 +6,27 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { VOICE_CAST } from './voiceKey';
-import { playBgm } from '../ui/bgm';
+import { bgmNow, playBgm } from '../ui/bgm';
+import { playSfx } from '../ui/sound';
 
 const IMG_BASE = '../story/';
 
 /** ゆっくり一枚ずつ浮かぶ絵（左右交互に）。全部は出さず、物語の節目だけ */
 const SHOTS = ['ep1/08-smoke', 'ep2/15-candle', 'ep3/26-mother', 'ep5/20-sticky-note', 'ep6/18-grave', 'ep7/13-camp', 'ep7/25-dawn-top'];
+
+/** 歌詞（Then I'll Keep Walking On）。秒は曲の中の位置。英語の下に日本語の訳 */
+const LYRICS: { at: number; en: string; ja: string }[] = [
+  { at: 7.0, en: 'I slept beyond the end of the world', ja: '眠りの向こうで、世界は変わって' },
+  { at: 14.0, en: 'Words became magic, prayers turned to light', ja: '言葉は魔法に、祈りは光に' },
+  { at: 20.1, en: 'A sticky note that said "fix it later"', ja: '「あとで直す」と書いた付箋を' },
+  { at: 26.2, en: 'Still folded tight inside my pocket', ja: 'ポケットの中で、握りしめてた' },
+  { at: 31.6, en: 'Say the word, this time not alone', ja: '唱えよう、今度はひとりじゃなくて' },
+  { at: 38.5, en: 'Turn the voices lost into the dawn', ja: '届かなかった声を、朝に変えて' },
+  { at: 44.6, en: 'Check it twice, again, with my own hands', ja: '確かめよう、何度でも、この手で' },
+  { at: 51.9, en: "Every word I speak, I'll stand behind", ja: '唱えた言葉に、責任を' },
+  { at: 56.6, en: "One more smoke, then I'll keep walking on", ja: '一服したら、また歩き出そう' },
+];
+const LYRIC_END = 64;
 
 type Block = { head?: string; lines: string[]; voices?: { name: string; roles: string }[] };
 
@@ -44,6 +59,20 @@ function credits(): Block[] {
 
 export function EndRoll({ onDone }: { onDone: () => void }) {
   const [dur, setDur] = useState(120);
+  // 曲の再生位置に合わせて、いまの歌詞を出す
+  const [line, setLine] = useState(-1);
+  useEffect(() => {
+    const t0 = performance.now();
+    const id = setInterval(() => {
+      const now = bgmNow();
+      const t = now?.name === 'credits' ? now.time : (performance.now() - t0) / 1000;
+      let i = -1;
+      for (let k = 0; k < LYRICS.length; k++) if (t >= LYRICS[k].at) i = k;
+      if (t >= LYRIC_END) i = -1;
+      setLine(i);
+    }, 200);
+    return () => clearInterval(id);
+  }, []);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
@@ -54,9 +83,19 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
     a.addEventListener('loadedmetadata', () => a.duration && isFinite(a.duration) && setDur(Math.max(60, a.duration - 4)));
   }, []);
 
+  // 曲が終わったら、少し余韻 → 画面がジジジと乱れる → 月の場面へ
+  const [phase, setPhase] = useState<'roll' | 'after' | 'glitch'>('roll');
   useEffect(() => {
-    const t = setTimeout(() => doneRef.current(), (dur + 4) * 1000);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => {
+      setPhase('after');
+      playBgm(null);
+    }, (dur + 4) * 1000);
+    const t2 = setTimeout(() => {
+      setPhase('glitch');
+      playSfx('glitch', 0.6);
+    }, (dur + 8) * 1000);
+    const t3 = setTimeout(() => doneRef.current(), (dur + 10.2) * 1000);
+    return () => [t1, t2, t3].forEach(clearTimeout);
   }, [dur]);
 
   // 絵は一枚ずつ、左右交互に、ゆっくりフェードしながら少しずつ寄っていく
@@ -72,7 +111,7 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
   ));
 
   return (
-    <div className="endroll" role="dialog" aria-label="エンドロール" style={{ '--dur': `${dur}s` } as React.CSSProperties}>
+    <div className={`endroll ph-${phase}`} role="dialog" aria-label="エンドロール" style={{ '--dur': `${dur}s` } as React.CSSProperties}>
       <div className="er-sky" aria-hidden>
         <div className="er-aurora" />
         <div className="er-moon big" />
@@ -103,6 +142,22 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
           ))}
         </div>
       </div>
+      <div className="er-lyrics" aria-live="off">
+        {line >= 0 && (
+          <div key={line} className="er-lyric">
+            <div className="en">{LYRICS[line].en}</div>
+            <div className="ja">{LYRICS[line].ja}</div>
+          </div>
+        )}
+      </div>
+      {phase === 'glitch' && (
+        <div className="er-glitch" aria-hidden>
+          <div className="g-noise" />
+          <div className="g-bar b1" />
+          <div className="g-bar b2" />
+          <div className="g-bar b3" />
+        </div>
+      )}
       <button className="ks-skip" onClick={(e) => { e.stopPropagation(); onDone(); }}>スキップ ▶▶</button>
     </div>
   );

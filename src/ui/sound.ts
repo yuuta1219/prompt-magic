@@ -11,7 +11,7 @@ const SOUND_KEY = 'prompt-magic.sound';
 const HAS_SPELL_VOICE = new Set<string>(spellVoices as string[]);
 
 export type Sfx =
-  | 'chant' | 'cast' | 'fizzle' | 'warn' | 'hurt' | 'move' | 'guard' | 'heal' | 'win' | 'lose' | 'ultimate'
+  | 'chant' | 'glitch' | 'cast' | 'fizzle' | 'warn' | 'hurt' | 'move' | 'guard' | 'heal' | 'win' | 'lose' | 'ultimate'
   | `hit-${'flame' | 'meteor' | 'splash' | 'bolt' | 'ice' | 'icicle' | 'wind' | 'tornado' | 'earth' | 'rock' | 'holy' | 'dark' | 'steam'}`;
 
 export function soundOn(): boolean {

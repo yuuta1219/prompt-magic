@@ -141,3 +141,8 @@ if (typeof window !== 'undefined') {
 
 // 開発中（npm run dev）にこのファイルが書き換わったら、古いほうの曲を止める（止めないと曲が重なる）
 if (import.meta.hot) import.meta.hot.dispose(() => all.forEach((el) => el.pause()));
+
+/** いま流れている曲の名前と再生位置（秒）。エンドロールの歌詞を曲に合わせるのに使う */
+export function bgmNow(): { name: BgmName; time: number } | null {
+  return cur && !cur.el.paused ? { name: cur.name, time: cur.el.currentTime } : null;
+}

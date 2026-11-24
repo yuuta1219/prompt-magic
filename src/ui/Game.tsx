@@ -107,7 +107,7 @@ export function Game() {
     const toEpisodes = () => setScreen({ k: 'episodes' });
     return (
       <EndRoll
-        onDone={() => (post?.length ? setScreen({ k: 'story', scene: { id: 'post-credits', pages: post, bgm: 'ep7-ending' }, then: toEpisodes }) : toEpisodes())}
+        onDone={() => (post?.length ? setScreen({ k: 'story', scene: { id: 'post-credits', pages: post, bgm: 'ep7-tension' }, then: toEpisodes }) : toEpisodes())}
       />
     );
   }
