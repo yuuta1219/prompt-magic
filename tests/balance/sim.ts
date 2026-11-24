@@ -14,6 +14,7 @@
 import { GameEngine } from '../../src/game/GameEngine';
 import { GRID_SIZE } from '../../src/game/constants';
 import { ELEMENTS, type SpellKey } from '../../src/game/elements';
+import type { BossKind } from '../../src/game/EnemyAI';
 import { INITIAL_UNLOCKED, SKILLS, STAGE, STAGE_RULES, canUnlock, computeLoadout, spForWin, stageStats } from '../../src/game/skills';
 
 type Bot = { name: string; latency: number; dodge: number; combo: boolean; ult: boolean; gap: number; miss: number };
@@ -82,10 +83,10 @@ function attackChant(e: GameEngine, bot: Bot, spells: Set<SpellKey>, step: numbe
   return ELEMENTS[pool[0] ?? 'water'].name;
 }
 
-function fight(stage: number, bot: Bot, seed: number) {
+function fight(stage: number, bot: Bot, seed: number, extra: { units?: number; boss?: BossKind } = {}) {
   const unlocked = unlockedAt(stage);
   const lo = computeLoadout(unlocked);
-  const e = new GameEngine(seed, { loadout: lo, stage });
+  const e = new GameEngine(seed, { loadout: lo, stage, ...extra });
   e.reset();
   let rnd = seed * 7919 + 1;
   const rand = () => ((rnd = (rnd * 1103515245 + 12345) % 2147483648) / 2147483648);
@@ -131,14 +132,18 @@ function fight(stage: number, bot: Bot, seed: number) {
 
 export function report(N = 30) {
   if (process.env.RULES) Object.assign(STAGE_RULES, JSON.parse(process.env.RULES));
-const STAGES = [1, 2, 3, 5, 6, 8, 10, 11, 13, 15, 16, 18, 20, 21, 23, 25, 26, 28, 30, 31, 33, 35];
+const STAGES: [number, { units?: number; boss?: BossKind }][] = [
+  [1, {}], [3, {}], [5, { boss: 'cerberus' }], [6, { units: 3 }], [8, {}], [10, { boss: 'tower' }], [11, { units: 3 }], [13, {}], [15, { boss: 'moderator' }],
+  [18, {}], [19, { units: 2, boss: 'chimera' }], [20, { boss: 'stationmaster' }], [23, {}], [25, { boss: 'ghost' }],
+  [26, { units: 4 }], [28, { units: 3 }], [29, { units: 3 }], [30, { boss: 'aegis' }], [31, {}], [34, { units: 5 }], [35, { boss: 'oracle-final' }],
+];
 console.log(`ステージ\t強さ(HP/攻撃)\tスキル数\t` + BOTS.map((b) => `${b.name}:勝率\t残HP\t秒`).join('\t'));
-for (const st of STAGES) {
+for (const [st, extra] of STAGES) {
   const ss = stageStats(st);
-  const row = [`${st}${ss.elite ? '★' : ''}`, `${ss.enemyHp}/${ss.enemyPower}`];
+  const row = [`${st}${ss.elite ? '★' : ''}${extra.boss ?? ''}${extra.units ? 'x' + extra.units : ''}`, `${ss.enemyHp}/${ss.enemyPower}`];
   let skills = 0;
   for (const bot of BOTS) {
-    const rs = Array.from({ length: N }, (_, i) => fight(st, bot, 1000 + i));
+    const rs = Array.from({ length: N }, (_, i) => fight(st, bot, 1000 + i, extra));
     skills = rs[0].skills;
     const wins = rs.filter((r) => r.win);
     row.push(`${Math.round((wins.length / N) * 100)}%`, wins.length ? `${Math.round((wins.reduce((a, r) => a + r.hp, 0) / wins.length) * 100)}%` : '-', `${Math.round(rs.reduce((a, r) => a + r.time, 0) / N)}`);

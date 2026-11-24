@@ -12,7 +12,7 @@ import type { Loadout } from './skills';
 import type { Action, Spell } from '../interpreter/schema';
 import { GridSystem } from './GridSystem';
 import { BattleState } from './BattleState';
-import { EnemyAI } from './EnemyAI';
+import { EnemyAI, type BossKind } from './EnemyAI';
 import { MagicEngine } from './MagicEngine';
 import { HarnessEngine } from './HarnessEngine';
 import { computeSpellCost, spellCastTimeMs } from './ManaSystem';
@@ -35,9 +35,9 @@ export class GameEngine {
   version = 0;
   private battleCounter = 0;
   private readonly seed?: number;
-  private opts: { loadout?: Loadout; stage?: number };
+  private opts: { loadout?: Loadout; stage?: number; units?: number; boss?: BossKind };
 
-  constructor(seed?: number, opts: { loadout?: Loadout; stage?: number } = {}) {
+  constructor(seed?: number, opts: { loadout?: Loadout; stage?: number; units?: number; boss?: BossKind } = {}) {
     this.seed = seed;
     this.opts = opts;
     this.s = new BattleState(seed, ++this.battleCounter, opts);
@@ -49,7 +49,7 @@ export class GameEngine {
   }
 
   /** 次の戦闘（reset）から使うスキルとステージを設定する */
-  configure(opts: { loadout?: Loadout; stage?: number }): void {
+  configure(opts: { loadout?: Loadout; stage?: number; units?: number; boss?: BossKind }): void {
     this.opts = { ...this.opts, ...opts };
   }
 
@@ -441,6 +441,17 @@ export class GameEngine {
 
   private checkEnd(): void {
     const s = this.s;
+    if (s.enemy.hp <= 0 && s.unitsLeft > 0) {
+      // 群れの敵：1体倒したら、次の1体が別の場所に現れる
+      s.unitsLeft--;
+      s.enemy.hp = s.enemy.maxHp;
+      s.enemy.shield = null;
+      s.enemy.frozenUntil = 0;
+      s.enemy.pos = { x: s.rng.int(1, 7), y: s.rng.int(1, 7) };
+      s.attacks = s.attacks.filter((a) => a.owner !== 'player');
+      s.log('system', `☆ 1体たおした！ 次の敵が現れた（残り${s.unitsLeft + 1}体）`);
+      return;
+    }
     if (s.enemy.hp <= 0) {
       s.phase = 'victory';
       s.attacks = [];

@@ -65,7 +65,7 @@ export function Game() {
     setScreen({
       k: 'story',
       scene: chapterBefore(c),
-      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, loseEvent: c.loseEvent, bgm: c.bgm?.battle as [BgmName, BgmName] | undefined, label: `チャプター${c.no} ${c.title}` } }),
+      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, units: c.units, boss: c.boss, loseEvent: c.loseEvent, bgm: c.bgm?.battle as [BgmName, BgmName] | undefined, label: `チャプター${c.no} ${c.title}` } }),
     });
 
   const startFree = () => {
@@ -99,7 +99,14 @@ export function Game() {
   }, [screen, ep]);
 
   // 開発中だけ: コンソールから window.__endroll() でエンドロールを確かめられる
-  if (import.meta.env.DEV) Object.assign(window, { __endroll: () => setScreen({ k: 'endroll' }) });
+  if (import.meta.env.DEV) Object.assign(window, {
+      __endroll: () => setScreen({ k: 'endroll' }),
+      // window.__fight(6, 1) で第6話チャプター1の戦闘へ直接
+      __fight: (ep: number, no: number) => {
+        const c = EPISODES[ep - 1]?.chapters[no - 1];
+        if (c) setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, units: c.units, boss: c.boss, loseEvent: c.loseEvent, label: `チャプター${c.no} ${c.title}` } });
+      },
+    });
 
   if (screen.k === 'endroll') {
     // エンドロールのあとに、もう一場面（第二部への引き）

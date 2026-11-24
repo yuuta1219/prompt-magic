@@ -136,6 +136,12 @@ code { font-family: 'JetBrains Mono', monospace; font-size: 0.82em; }
 .bar .fill { height: 100%; transition: width 0.12s linear; }
 .bar-label { position: absolute; inset: 0; display: flex; align-items: center; padding-left: 8px; font-size: 0.74rem; font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 4px #000; white-space: nowrap; overflow: hidden; }
 .bar.hp-enemy .fill { background: linear-gradient(90deg, #8b1030, var(--enemy)); }
+.bar.seg { display: flex; flex-wrap: wrap; gap: 3px 5px; background: transparent; border: none; overflow: visible; height: auto; }
+.bar.seg .bar-label { position: static; width: 100%; order: -1; padding-left: 0; }
+.bar.seg .seg-cell { flex: 1; height: 14px; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,120,140,0.35); border-radius: 3px; overflow: hidden; }
+.bar.seg .seg-cell .fill { background: linear-gradient(90deg, #8b1030, var(--enemy)); }
+.bar.seg .seg-cell.now { box-shadow: 0 0 0 1px var(--enemy), 0 0 8px rgba(255,80,110,0.5); }
+.bar.seg .seg-cell.down { opacity: 0.35; }
 .bar.hp-player .fill { background: linear-gradient(90deg, #0b6f73, var(--good)); }
 .bar.mana .fill, .fill.mana { background: linear-gradient(90deg, #2c2a8f, var(--mana), #9fb0ff); box-shadow: 0 0 12px rgba(106, 123, 255, 0.6); }
 .bar.cast.idle .bar-label { color: var(--muted); }
@@ -789,6 +795,7 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .arena .bar { height: 22px; }
 .arena .bar .bar-label { font-size: 0.82rem; }
 .arena .bar.thin-mana { height: 16px; }
+.arena .bar.seg { height: auto; margin-bottom: 4px; }
 .fields { width: min(100%, calc(var(--cell) * 9 + 220px)); }
 .controls button.on { border-color: var(--accent); box-shadow: 0 0 12px rgba(169, 139, 255, 0.5); }
 

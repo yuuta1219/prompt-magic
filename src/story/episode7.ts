@@ -15,12 +15,12 @@ const FIELD = { before: 'ep7-field', after: 'ep7-field', battle: ['ep7-battle-1'
 
 /** チャプター番号ごとの戦闘の設定 */
 /** チャプター3（オラクル）は負けイベントなので、まず勝てない強さ（ステージ99）にしている */
-const BATTLE: Record<number, { stage: number; sprite: string; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
+const BATTLE: Record<number, { stage: number; sprite: string; units?: number; boss?: import('../game/EnemyAI').BossKind; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
   1: { stage: 31, sprite: 'proto1', thumb: 'ep7/02-deck', bgm: FIELD },
   2: { stage: 32, sprite: 'proto2', thumb: 'ep7/05-corridor', bgm: FIELD },
-  3: { stage: 99, sprite: 'oracle', thumb: 'ep7/08-oracle-throne', bgm: FIELD },
-  4: { stage: 34, sprite: 'sweeper', thumb: 'ep7/13-camp', bgm: FIELD },
-  5: { stage: 35, sprite: 'oracle-final', thumb: 'ep7/18-oracle-final', bgm: { before: 'ep7-tension', after: 'ep7-ending', battle: ['ep7-boss', 'ep7-boss'] } },
+  3: { stage: 99, sprite: 'oracle', boss: 'oracle', thumb: 'ep7/08-oracle-throne', bgm: FIELD },
+  4: { stage: 34, sprite: 'sweeper', units: 5, thumb: 'ep7/13-camp', bgm: FIELD },
+  5: { stage: 35, sprite: 'oracle-final', boss: 'oracle-final', thumb: 'ep7/18-oracle-final', bgm: { before: 'ep7-tension', after: 'ep7-ending', battle: ['ep7-boss', 'ep7-boss'] } },
 };
 
 export const EPISODE7: Episode = {
@@ -40,6 +40,8 @@ export const EPISODE7: Episode = {
     enemy: c.enemy,
     stage: BATTLE[c.no]?.stage ?? c.no + 30,
     sprite: BATTLE[c.no]?.sprite,
+    units: BATTLE[c.no]?.units,
+    boss: BATTLE[c.no]?.boss,
     thumb: BATTLE[c.no]?.thumb,
     bgm: BATTLE[c.no]?.bgm,
     loseEvent: c.loseEvent,

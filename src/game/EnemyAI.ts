@@ -6,7 +6,7 @@
  *   → プレイヤーが「敵の次の移動先を予測して」と詠唱すると、エンジンはこの計画を読める
  * - プレイヤーの魔法の予兆を見て、確率で回避する
  */
-import { COST, ENEMY } from './constants';
+import { COST, ENEMY, GRID_SIZE } from './constants';
 import { actionManaCost } from './ManaSystem';
 import { GridSystem } from './GridSystem';
 import type { BattleState } from './BattleState';
@@ -14,6 +14,22 @@ import type { AttackElement, PendingAttack, Vec } from './types';
 import type { Shape } from '../interpreter/schema';
 
 type EnemyAction = 'move' | 'attack' | 'guard';
+
+/** ボスのギミック。ふつうの攻撃にまぜて、ボスだけの大技を使ってくる */
+export type BossKind = 'cerberus' | 'tower' | 'moderator' | 'chimera' | 'stationmaster' | 'ghost' | 'aegis' | 'oracle' | 'oracle-final';
+
+/** ボスの大技の名前（ログと画面に出る） */
+export const BOSS_MOVE_NAMES: Record<BossKind, string[]> = {
+  cerberus: ['三つ首の咆哮'],
+  tower: ['電波塔の影'],
+  moderator: ['静粛に'],
+  chimera: ['継ぎはぎの大技'],
+  stationmaster: ['発車ベル'],
+  ghost: ['炎上'],
+  aegis: ['魔法陣の十字', '魔法陣の斜め'],
+  oracle: ['全術式同時詠唱'],
+  'oracle-final': ['三つ首の咆哮', '電波塔の影', '炎上', '発車ベル'],
+};
 
 interface Pattern {
   label: string;
@@ -114,6 +130,7 @@ export class EnemyAI {
   private decideNext(): EnemyAction {
     const r = this.s.rng.next();
     const lowHp = this.s.enemy.hp < this.s.enemy.maxHp * 0.4;
+    if (this.s.boss === 'aegis' && !this.s.enemy.shield && r < 0.3) return 'guard';
     if (lowHp && r < 0.15) return 'guard';
     if (r < (this.enraged ? 0.55 : 0.45)) return 'attack';
     return 'move';
@@ -158,6 +175,8 @@ export class EnemyAI {
   /** 払える攻撃の中からランダムに選ぶ。どれも払えなければ false */
   private castAttack(): boolean {
     const s = this.s;
+    // ボスは、半分くらいの確率で大技（負けイベントのオラクルは毎回）
+    if (s.boss && (s.boss === 'oracle' || s.rng.chance(this.enraged ? 0.65 : 0.5)) && this.bossMove()) return true;
     const affordable = PATTERNS.filter((p) => s.enemyMana.canAfford(enemyAttackCost(p)));
     if (affordable.length === 0) return false;
     const p = s.rng.pick(affordable);
@@ -175,6 +194,108 @@ export class EnemyAI {
     s.log('enemy', `敵が「${p.label}」の詠唱を開始！ ${(castMs / 1000).toFixed(1)}秒後に着弾（魔力-${cost}）`);
     s.emit({ type: 'ENEMY_CAST_START', attack: atk });
     return true;
+  }
+
+  // ---------------------------------------------------------------- ボスの大技
+
+  private inGrid = (c: Vec) => c.x >= 0 && c.y >= 0 && c.x < GRID_SIZE && c.y < GRID_SIZE;
+  private all(): Vec[] {
+    const out: Vec[] = [];
+    for (let y = 0; y < GRID_SIZE; y++) for (let x = 0; x < GRID_SIZE; x++) out.push({ x, y });
+    return out;
+  }
+  /** 大技を1つ予告する（ダメージ・詠唱時間はステージの強さに合わせる） */
+  private bossHit(cells: Vec[], baseDmg: number, element: AttackElement, castMs: number, label: string): void {
+    const s = this.s;
+    const dmg = Math.round(baseDmg * s.enemyPower * (this.enraged ? 1.15 : 1));
+    const atk = s.addAttack('enemy', 'player', cells.filter(this.inGrid), dmg, element, castMs, label);
+    s.emit({ type: 'ENEMY_CAST_START', attack: atk });
+  }
+
+  /** ボスの大技。魔力が足りなければ false（ふつうの攻撃に戻る） */
+  private bossMove(): boolean {
+    const s = this.s;
+    const kind = s.boss!;
+    const cost = COST.ATTACK_BASE + 50;
+    if (kind !== 'oracle' && !s.enemyMana.canAfford(cost)) return false;
+    if (kind !== 'oracle') s.enemyMana.spend(cost);
+    const p = s.player.pos;
+    const base = s.rng.int(ENEMY.CAST_MIN_MS, ENEMY.CAST_MAX_MS);
+    const pick = kind === 'oracle-final' || kind === 'chimera' ? s.rng.pick(['cerberus', 'tower', 'ghost', 'stationmaster'] as const) : kind;
+    const say = (name: string, note: string) => s.log('enemy', `ボスの大技「${name}」！ ${note}`);
+    switch (pick) {
+      case 'cerberus': {
+        // 左・真ん中・右の3列。全部同時に赤くなるが、着弾は1つずつずれている
+        const order = s.rng.shuffle([0, 1, 2]);
+        order.forEach((band, i) => {
+          const cells = this.all().filter((c) => Math.floor(c.x / 3) === band);
+          this.bossHit(cells, 12, 'fire', base + i * 1300, `三つ首の咆哮（${['左', '真ん中', '右'][band]}）`);
+        });
+        say('三つ首の咆哮', '三つの列が時間差で燃える。よく見て、最後に燃える列へ');
+        return true;
+      }
+      case 'tower': {
+        // 9マスの東京タワーの形（てっぺん・展望台・脚）
+        const shape = [[0, -3], [0, -2], [-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-2, 1], [2, 1]];
+        const aim = { x: Math.min(6, Math.max(2, p.x)), y: Math.min(7, Math.max(3, p.y + (s.rng.chance(0.5) ? 0 : 1))) };
+        this.bossHit(shape.map(([dx, dy]) => ({ x: aim.x + dx, y: aim.y + dy })), 24, 'thunder', Math.round(base * 1.1), '電波塔の影');
+        // 怒ると、もう1本ずらして建てる
+        if (this.enraged) {
+          const aim2 = { x: aim.x < 4 ? aim.x + 4 : aim.x - 4, y: aim.y };
+          this.bossHit(shape.map(([dx, dy]) => ({ x: aim2.x + dx, y: aim2.y + dy })), 24, 'thunder', Math.round(base * 1.1) + 800, '電波塔の影');
+        }
+        say('電波塔の影', 'タワーの形に雷が落ちる。脚のすき間は安全');
+        return true;
+      }
+      case 'moderator': {
+        // 盤面ぜんぶ。3×3 の「発言が許された場所」だけ安全
+        const safe = { x: s.rng.int(1, 7), y: s.rng.int(1, 7) };
+        const cells = this.all().filter((c) => Math.abs(c.x - safe.x) > 1 || Math.abs(c.y - safe.y) > 1);
+        this.bossHit(cells, 19, 'dark', Math.round(base * 1.6), '静粛に');
+        say('静粛に', '盤面の全部が対象。光っていない 3×3 に逃げ込め');
+        return true;
+      }
+      case 'stationmaster': {
+        // 3本の列車（横一列）が、時間差で走り抜ける。1本は今いる列
+        const rows = [p.y, ...s.rng.shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8].filter((r) => r !== p.y)).slice(0, 2)];
+        s.rng.shuffle(rows).forEach((r, i) => {
+          this.bossHit(this.all().filter((c) => c.y === r), 20, 'earth', base + i * 800, '発車ベル');
+        });
+        say('発車ベル', '3本の列車が時間差で走り抜ける');
+        return true;
+      }
+      case 'ghost': {
+        // 炎上：今いるマスから、輪になって燃え広がる
+        for (let r = 0; r <= 2; r++) {
+          const ring = this.all().filter((c) => Math.max(Math.abs(c.x - p.x), Math.abs(c.y - p.y)) === r);
+          this.bossHit(ring, 16, 'fire', base + r * 700, '炎上');
+        }
+        say('炎上', '足もとから燃え広がる。遠くへ逃げろ');
+        return true;
+      }
+      case 'aegis': {
+        // 魔法陣の十字か斜め（盤面の端から端まで）
+        const diag = s.rng.chance(0.5);
+        const cells = this.all().filter((c) => (diag ? Math.abs(c.x - p.x) === Math.abs(c.y - p.y) : c.x === p.x || c.y === p.y));
+        this.bossHit(cells, 22, 'ice', base, diag ? '魔法陣の斜め' : '魔法陣の十字');
+        say(diag ? '魔法陣の斜め' : '魔法陣の十字', '盤面の端まで届く');
+        return true;
+      }
+      case 'oracle': {
+        // 全術式同時詠唱：あらゆる魔法を一度に。負けイベント
+        const n = 3 + s.rng.int(0, 2);
+        for (let i = 0; i < n; i++) {
+          const pat = s.rng.pick(PATTERNS);
+          const aim = GridSystem.clamp({ x: p.x + s.rng.int(-2, 2), y: p.y + s.rng.int(-2, 2) });
+          this.bossHit(GridSystem.shapeCells(aim, pat.shape), pat.damage * 1.6, pat.element, Math.round(base * 0.7) + i * 250, pat.label);
+        }
+        const band = s.rng.int(0, 2);
+        this.bossHit(this.all().filter((c) => Math.floor(c.x / 3) === band), 20, 'dark', Math.round(base * 0.9), '断罪の列');
+        say('全術式同時詠唱', 'あなたが唱えてきた魔法が、全部同時に来る');
+        return true;
+      }
+    }
+    return false;
   }
 
   /** プレイヤーの攻撃予兆が出たとき */

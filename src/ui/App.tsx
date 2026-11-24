@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { BossKind } from '../game/EnemyAI';
 import { GameEngine, lockedParts } from '../game/GameEngine';
 import { interpretSpell } from '../interpreter/SpellInterpreter';
 import { TICK_MS, SPELL_LIMITS } from '../game/constants';
@@ -49,6 +50,10 @@ export interface BattleSpec {
   loseEvent?: boolean;
   /** BGM（前半, 敵の HP 50% 以下）。省略すると battle-1 → battle-2 */
   bgm?: [BgmName, BgmName];
+  /** 群れの敵の数（HP バーがこの数に分かれる） */
+  units?: number;
+  /** ボスのギミック */
+  boss?: BossKind;
 }
 
 /** 主人公の画像 */
@@ -74,7 +79,7 @@ export function App({
     commitProgress(p);
   };
   const loadout = useMemo(() => computeLoadout(progress.unlocked), [progress.unlocked]);
-  const engine = useMemo(() => new GameEngine(undefined, { loadout: computeLoadout(progress.unlocked), stage: battle.stage }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const engine = useMemo(() => new GameEngine(undefined, { loadout: computeLoadout(progress.unlocked), stage: battle.stage, units: battle.units, boss: battle.boss }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [treeOpen, setTreeOpen] = useState(false);
   const treeOpenRef = useRef(treeOpen);
   treeOpenRef.current = treeOpen;
@@ -169,7 +174,7 @@ export function App({
   const restart = () => {
     const p = progressRef.current;
     // 修練場は勝つたびに次のステージへ。チャプターはいつも同じ強さ
-    engine.configure({ loadout: computeLoadout(p.unlocked), stage: battle.kind === 'free' ? p.stage : battle.stage });
+    engine.configure({ loadout: computeLoadout(p.unlocked), stage: battle.kind === 'free' ? p.stage : battle.stage, units: battle.units, boss: battle.boss });
     engine.reset();
     setLastReward(null);
   };
@@ -237,7 +242,7 @@ export function App({
   const [bgmA, bgmB] = battle.bgm ?? ['battle-1', 'battle-2'];
   useEffect(() => {
     // 勝ち負けが決まったら止める（次の画面がそれぞれの曲を流す）
-    playBgm(s.phase !== 'battle' || !sound ? null : s.enemy.hp <= s.enemy.maxHp * 0.5 ? bgmB : bgmA);
+    playBgm(s.phase !== 'battle' || !sound ? null : (s.unitsLeft * s.enemy.maxHp + s.enemy.hp) <= s.units * s.enemy.maxHp * 0.5 ? bgmB : bgmA);
   });
   // 話しはじめたら、魔法陣に魔力がたまる音
   useEffect(() => {
@@ -326,7 +331,11 @@ export function App({
         {/* 敵HUD */}
         <div className="hud hud-enemy">
           <div className="hud-name">✶ {enemyName} <span className="muted">{battle.kind === 'free' ? `修練場 ステージ${s.stage}` : battle.label}</span>{s.elite && <span className="elite-tag">★ 強敵</span>}</div>
-          <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
+          {s.units > 1 ? (
+            <SegBar units={s.units} left={s.unitsLeft} value={s.enemy.hp} max={s.enemy.maxHp} />
+          ) : (
+            <Bar value={s.enemy.hp} max={s.enemy.maxHp} kind="hp-enemy" label={`HP ${s.enemy.hp}/${s.enemy.maxHp}`} />
+          )}
           <Bar value={s.enemyMana.current} max={s.enemyMana.max} kind="mana thin-mana" label={`魔力 ${Math.floor(s.enemyMana.current)}/${s.enemyMana.max}`} />
           <div className="enemy-cast">
             {enemyCast ? (
@@ -444,6 +453,24 @@ function castColor(actions: ReturnType<typeof interpretSpell>['actions']): strin
   if (actions.some((a) => a.type === 'DEFEND')) return '79, 227, 255';
   if (actions.some((a) => a.type === 'MOVE')) return '190, 200, 255';
   return '255, 209, 102';
+}
+
+/** 群れの敵の HP。1体ずつ区切ったバー：倒した分は空、いま戦っている1体は減っていき、残りは満タン */
+function SegBar({ units, left, value, max }: { units: number; left: number; value: number; max: number }) {
+  const beaten = units - left - 1;
+  return (
+    <div className="bar hp-enemy seg" style={{ '--n': units } as React.CSSProperties}>
+      {Array.from({ length: units }, (_, i) => {
+        const p = i < beaten ? 0 : i === beaten ? Math.max(0, Math.min(1, value / max)) : 1;
+        return (
+          <div key={i} className={`seg-cell ${i < beaten ? 'down' : i === beaten ? 'now' : ''}`}>
+            <div className="fill" style={{ width: `${p * 100}%` }} />
+          </div>
+        );
+      })}
+      <span className="bar-label">のこり {left + 1}/{units}体　HP {value}/{max}</span>
+    </div>
+  );
 }
 
 function Bar({ value, max, kind, label }: { value: number; max: number; kind: string; label: string }) {

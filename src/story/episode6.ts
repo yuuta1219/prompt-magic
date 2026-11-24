@@ -14,12 +14,12 @@ const script = parseScript(raw);
 const FIELD = { before: 'ep6-field', after: 'ep6-field', battle: ['ep6-battle-1', 'ep6-battle-2'] as [string, string] };
 
 /** チャプター番号ごとの戦闘の設定 */
-const BATTLE: Record<number, { stage: number; sprite: string; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
-  1: { stage: 26, sprite: 'watcher', thumb: 'ep6/03-watchers', bgm: FIELD },
+const BATTLE: Record<number, { stage: number; sprite: string; units?: number; boss?: import('../game/EnemyAI').BossKind; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
+  1: { stage: 26, sprite: 'watcher', units: 4, thumb: 'ep6/03-watchers', bgm: FIELD },
   2: { stage: 27, sprite: 'tank', thumb: 'ep6/07-wrecks', bgm: FIELD },
-  3: { stage: 28, sprite: 'missile', thumb: 'ep6/12-untouched', bgm: FIELD },
-  4: { stage: 29, sprite: 'sweeper', thumb: 'ep6/16-sweepers', bgm: FIELD },
-  5: { stage: 30, sprite: 'aegis', thumb: 'ep6/20-aegis', bgm: { before: 'ep6-tension', after: 'ep6-ending', battle: ['ep6-boss', 'ep6-boss'] } },
+  3: { stage: 28, sprite: 'missile', units: 3, thumb: 'ep6/12-untouched', bgm: FIELD },
+  4: { stage: 29, sprite: 'sweeper', units: 3, thumb: 'ep6/16-sweepers', bgm: FIELD },
+  5: { stage: 30, sprite: 'aegis', boss: 'aegis', thumb: 'ep6/20-aegis', bgm: { before: 'ep6-tension', after: 'ep6-ending', battle: ['ep6-boss', 'ep6-boss'] } },
 };
 
 export const EPISODE6: Episode = {
@@ -39,6 +39,8 @@ export const EPISODE6: Episode = {
     enemy: c.enemy,
     stage: BATTLE[c.no]?.stage ?? c.no + 25,
     sprite: BATTLE[c.no]?.sprite,
+    units: BATTLE[c.no]?.units,
+    boss: BATTLE[c.no]?.boss,
     thumb: BATTLE[c.no]?.thumb,
     bgm: BATTLE[c.no]?.bgm,
     loseEvent: c.loseEvent,

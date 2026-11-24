@@ -14,12 +14,12 @@ const script = parseScript(raw);
 const FIELD = { before: 'ep4-field', after: 'ep4-field', battle: ['ep4-battle-1', 'ep4-battle-2'] as [string, string] };
 
 /** チャプター番号ごとの戦闘の設定 */
-const BATTLE: Record<number, { stage: number; sprite: string; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
+const BATTLE: Record<number, { stage: number; sprite: string; units?: number; boss?: import('../game/EnemyAI').BossKind; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
   1: { stage: 16, sprite: 'gate', thumb: 'ep4/03-gates', bgm: FIELD },
   2: { stage: 17, sprite: 'announcer', thumb: 'ep4/06-platform', bgm: FIELD },
   3: { stage: 18, sprite: 'guardian', thumb: 'ep4/09-auth', bgm: FIELD },
-  4: { stage: 19, sprite: 'chimera', thumb: 'ep4/13-prototypes', bgm: FIELD },
-  5: { stage: 20, sprite: 'stationmaster', thumb: 'ep4/16-stationmaster', bgm: { before: 'ep4-tension', after: 'ep4-ending', battle: ['ep4-boss', 'ep4-boss'] } },
+  4: { stage: 19, sprite: 'chimera', units: 2, boss: 'chimera', thumb: 'ep4/13-prototypes', bgm: FIELD },
+  5: { stage: 20, sprite: 'stationmaster', boss: 'stationmaster', thumb: 'ep4/16-stationmaster', bgm: { before: 'ep4-tension', after: 'ep4-ending', battle: ['ep4-boss', 'ep4-boss'] } },
 };
 
 export const EPISODE4: Episode = {
@@ -39,6 +39,8 @@ export const EPISODE4: Episode = {
     enemy: c.enemy,
     stage: BATTLE[c.no]?.stage ?? c.no + 15,
     sprite: BATTLE[c.no]?.sprite,
+    units: BATTLE[c.no]?.units,
+    boss: BATTLE[c.no]?.boss,
     thumb: BATTLE[c.no]?.thumb,
     bgm: BATTLE[c.no]?.bgm,
     loseEvent: c.loseEvent,

@@ -38,6 +38,10 @@ export interface Chapter {
   enemy: string;
   /** 戦闘での敵の画像（public/units/ の下、拡張子なし） */
   sprite?: string;
+  /** 群れの敵の数（HP がこの数に分かれる） */
+  units?: number;
+  /** ボスのギミック */
+  boss?: import('../game/EnemyAI').BossKind;
   /** マスの絵（public/story/ の下、拡張子なし） */
   thumb?: string;
   /** 戦闘の前に流す紙芝居 */

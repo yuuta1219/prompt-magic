@@ -14,12 +14,12 @@ const script = parseScript(raw);
 const FIELD = { before: 'ep5-field', after: 'ep5-field', battle: ['ep5-battle-1', 'ep5-battle-2'] as [string, string] };
 
 /** チャプター番号ごとの戦闘の設定 */
-const BATTLE: Record<number, { stage: number; sprite: string; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
+const BATTLE: Record<number, { stage: number; sprite: string; units?: number; boss?: import('../game/EnemyAI').BossKind; thumb: string; bgm: { before?: string; after?: string; battle?: [string, string] } }> = {
   1: { stage: 21, sprite: 'sl', thumb: 'ep5/02-sl-square', bgm: FIELD },
   2: { stage: 22, sprite: 'securitygate', thumb: 'ep5/05-office-building', bgm: FIELD },
   3: { stage: 23, sprite: 'exception', thumb: 'ep5/13-exception', bgm: FIELD },
   4: { stage: 24, sprite: 'merger', thumb: 'ep5/14-history', bgm: FIELD },
-  5: { stage: 25, sprite: 'ghost', thumb: 'ep5/18-ghost', bgm: { before: 'ep5-tension', after: 'ep5-ending', battle: ['ep5-boss', 'ep5-boss'] } },
+  5: { stage: 25, sprite: 'ghost', boss: 'ghost', thumb: 'ep5/18-ghost', bgm: { before: 'ep5-tension', after: 'ep5-ending', battle: ['ep5-boss', 'ep5-boss'] } },
 };
 
 export const EPISODE5: Episode = {
@@ -39,6 +39,8 @@ export const EPISODE5: Episode = {
     enemy: c.enemy,
     stage: BATTLE[c.no]?.stage ?? c.no + 20,
     sprite: BATTLE[c.no]?.sprite,
+    units: BATTLE[c.no]?.units,
+    boss: BATTLE[c.no]?.boss,
     thumb: BATTLE[c.no]?.thumb,
     bgm: BATTLE[c.no]?.bgm,
     loseEvent: c.loseEvent,

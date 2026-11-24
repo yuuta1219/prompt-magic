@@ -18,6 +18,16 @@ export class Rng {
   chance(p: number): boolean {
     return this.next() < p;
   }
+  /** 並びをランダムに入れかえた新しい配列 */
+  shuffle<T>(arr: readonly T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = this.int(0, i);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   pick<T>(arr: readonly T[]): T {
     return arr[Math.floor(this.next() * arr.length)];
   }

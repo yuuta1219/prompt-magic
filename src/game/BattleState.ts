@@ -1,3 +1,4 @@
+import type { BossKind } from './EnemyAI';
 import { ENEMY, PLAYER } from './constants';
 import { BASE_ALL_LOADOUT, stageStats, type Loadout } from './skills';
 import { GridSystem } from './GridSystem';
@@ -42,6 +43,11 @@ export class BattleState {
   readonly enemyThinkMs: number;
   /** 5戦ごとの強敵か */
   readonly elite: boolean;
+  /** 群れの敵の数と、いま戦っている1体のあとに残っている数（1体なら 1 と 0） */
+  readonly units: number;
+  unitsLeft: number;
+  /** ボスのギミックの種類（ふつうの敵は undefined） */
+  readonly boss?: BossKind;
   /** 敵の魔力（プレイヤーと同じルール: 最大300・毎秒8回復） */
   enemyMana = new ManaPool();
 
@@ -66,14 +72,19 @@ export class BattleState {
   readonly rng: Rng;
   private seq = 0;
 
-  constructor(seed?: number, battleId = 1, opts: { loadout?: Loadout; stage?: number } = {}) {
+  constructor(seed?: number, battleId = 1, opts: { loadout?: Loadout; stage?: number; units?: number; boss?: BossKind } = {}) {
     this.rng = new Rng(seed);
     this.battleId = battleId;
     this.loadout = opts.loadout ?? BASE_ALL_LOADOUT;
     this.stage = opts.stage ?? 1;
     const st = stageStats(this.stage);
     this.player = { hp: this.loadout.hpMax, maxHp: this.loadout.hpMax, pos: { ...PLAYER.START }, shield: null, frozenUntil: 0 };
-    this.enemy = { hp: st.enemyHp, maxHp: st.enemyHp, pos: { ...ENEMY.START }, shield: null, frozenUntil: 0 };
+    // 群れの敵は、全体の HP を何体かに分ける（全体は少しだけ多め）
+    this.units = Math.max(1, opts.units ?? 1);
+    this.unitsLeft = this.units - 1;
+    const unitHp = this.units > 1 ? Math.round((st.enemyHp * 1.1) / this.units) : st.enemyHp;
+    this.enemy = { hp: unitHp, maxHp: unitHp, pos: { ...ENEMY.START }, shield: null, frozenUntil: 0 };
+    this.boss = opts.boss;
     this.enemyPower = st.enemyPower;
     this.enemyThinkMs = st.thinkMs;
     this.elite = st.elite;
