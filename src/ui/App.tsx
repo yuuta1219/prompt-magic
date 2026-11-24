@@ -13,6 +13,7 @@ import { useSpeech } from './useSpeech';
 import { CastBanner, ChantPanel, type ChantFx } from './Chant';
 import { playSfx, saySpells, setSoundOn, soundOn, type Sfx } from './sound';
 import { vfxKind } from './Vfx';
+import { BattleBgm } from './bgm';
 import { CostPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
 
 
@@ -227,6 +228,12 @@ export function App({
     if (imp && !p.impact) playSfx('ultimate', 0.7);
     prev.current = { pos, hp: s.player.hp, shield: !!s.player.shield, phase: s.phase, impact: imp };
   });
+  // ---- BGM: 前半は歌なし、敵の HP が半分を切ったら歌ありのアップテンポな曲へ
+  const bgm = useMemo(() => new BattleBgm(), []);
+  useEffect(() => {
+    bgm.play(s.phase !== 'battle' || !sound ? null : s.enemy.hp <= s.enemy.maxHp * 0.5 ? 'battle-2' : 'battle-1');
+  });
+  useEffect(() => () => bgm.stop(), [bgm]);
   // 話しはじめたら、魔法陣に魔力がたまる音
   useEffect(() => {
     if (speech.interim) playSfx('chant', 0.25);
