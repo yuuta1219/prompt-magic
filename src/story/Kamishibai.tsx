@@ -60,12 +60,12 @@ export function Kamishibai({ scene, onDone }: { scene: StoryScene; onDone: () =>
   };
   useEffect(() => {
     if (!soundOn) return;
-    for (const k of pageSfx(page)) play(`${SFX_BASE}${k}.mp3`, 0.45);
+    for (const k of pageSfx(page)) play(`${SFX_BASE}${k}.mp3`, 0.27);
   }, [pageIdx, soundOn]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     voiceRef.current?.pause();
     if (!soundOn) return;
-    if (line.sfx) play(`${SFX_BASE}${line.sfx}.mp3`, 0.6);
+    if (line.sfx) play(`${SFX_BASE}${line.sfx}.mp3`, 0.36);
     const who = line.who === undefined ? 'ナレーション' : line.who;
     const key = voiceKey(who, line.text);
     if (!VOICE_CAST[who] || !VOICES.has(key)) return;
