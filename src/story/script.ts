@@ -21,6 +21,8 @@ export interface ParsedChapter {
   after: StoryPage[];
   /** 負けイベント（「### 負けたあと」がある）。戦闘に負けても話が進む */
   loseEvent?: boolean;
+  /** エンドロールのあとに流す紙芝居（「### エンドロールのあと」） */
+  postCredits: StoryPage[];
 }
 
 export interface ParsedScript {
@@ -93,7 +95,7 @@ export function parseScript(text: string): ParsedScript {
       target = out.prologue;
     } else if ((m = line.match(/^##\s+チャプター(\d+)「(.+)」(?:（敵[:：]\s*(.+?)）)?/))) {
       finishPage();
-      out.chapters.push({ no: Number(m[1]), title: m[2].trim(), enemy: (m[3] ?? '').trim(), before: [], after: [] });
+      out.chapters.push({ no: Number(m[1]), title: m[2].trim(), enemy: (m[3] ?? '').trim(), before: [], after: [], postCredits: [] });
       target = out.chapters[out.chapters.length - 1].before;
     } else if (/^###\s+戦闘の前/.test(line)) {
       finishPage();
@@ -101,6 +103,9 @@ export function parseScript(text: string): ParsedScript {
     } else if (/^###\s+勝ったあと/.test(line)) {
       finishPage();
       target = out.chapters[out.chapters.length - 1]?.after ?? null;
+    } else if (/^###\s+エンドロールのあと/.test(line)) {
+      finishPage();
+      target = out.chapters[out.chapters.length - 1]?.postCredits ?? null;
     } else if (/^###\s+負けたあと/.test(line)) {
       finishPage();
       const ch = out.chapters[out.chapters.length - 1];

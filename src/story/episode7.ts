@@ -43,6 +43,7 @@ export const EPISODE7: Episode = {
     thumb: BATTLE[c.no]?.thumb,
     bgm: BATTLE[c.no]?.bgm,
     loseEvent: c.loseEvent,
+    postCredits: c.postCredits,
     before: c.before,
     after: c.after,
   })),

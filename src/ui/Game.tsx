@@ -101,7 +101,16 @@ export function Game() {
   // 開発中だけ: コンソールから window.__endroll() でエンドロールを確かめられる
   if (import.meta.env.DEV) Object.assign(window, { __endroll: () => setScreen({ k: 'endroll' }) });
 
-  if (screen.k === 'endroll') return <EndRoll onDone={() => setScreen({ k: 'episodes' })} />;
+  if (screen.k === 'endroll') {
+    // エンドロールのあとに、もう一場面（第二部への引き）
+    const post = EPISODES[EPISODES.length - 1].chapters.at(-1)?.postCredits;
+    const toEpisodes = () => setScreen({ k: 'episodes' });
+    return (
+      <EndRoll
+        onDone={() => (post?.length ? setScreen({ k: 'story', scene: { id: 'post-credits', pages: post, bgm: 'ep7-ending' }, then: toEpisodes }) : toEpisodes())}
+      />
+    );
+  }
 
   if (screen.k === 'story') return <Kamishibai key={screen.scene.id} scene={screen.scene} onDone={screen.then} />;
 

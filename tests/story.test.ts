@@ -114,3 +114,11 @@ describe('第4話〜第7話', () => {
     expect(speakable('……ワタシヲ、置イテ、行ケ。')).toBe('……ワタシヲ、置いて、行け。');
   });
 });
+
+describe('エンドロールのあと', () => {
+  it('第7話の最後のチャプターは「第一部 完」で終わり、月の場面はエンドロールのあとに流れる', () => {
+    const c = EPISODES[6].chapters[4];
+    expect(c.after.at(-1)?.lines[0].text).toBe('第一部　完');
+    expect(c.postCredits?.[0].img).toBe('ep7/27-moon');
+  });
+});
