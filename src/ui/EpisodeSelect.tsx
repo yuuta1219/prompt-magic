@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import type { Episode } from '../story/types';
 import type { Progress } from '../game/progress';
+import { tweetUrl } from './share';
 
 const IMG_BASE = '../story/';
 
@@ -99,6 +100,11 @@ export function EpisodeSelect({
         <p className="mp-desc">
           {s.open ? `チャプター ${done(s.ep)} / ${s.ep.chapters.length} クリア` : `${episodes[sel - 1]?.ep.title ?? ''}をクリアすると開く。`}
         </p>
+        {s.cleared && (
+          <a className="mp-share" href={tweetUrl(sel + 1, s.ep.subtitle)} target="_blank" rel="noopener noreferrer">
+            𝕏 クリアをポスト
+          </a>
+        )}
         {s.open && (
           <button className="mp-go" onClick={() => onPick(sel)}>
             {s.cleared ? '↻ もう一度あそぶ' : done(s.ep) > 0 ? '▶ つづきから' : '▶ はじめる'}
