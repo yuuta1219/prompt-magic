@@ -1417,23 +1417,36 @@ span.cmd-btn, span.guide-name { cursor: default; }
 @media (max-width: 760px) { .world-spot { width: 58px; } .ws-title { font-size: 0.68rem; } }
 
 /* ================================================ エンドロール */
-.endroll { position: fixed; inset: 0; z-index: 70; background: #000; display: grid; grid-template-columns: 1fr minmax(320px, 1.1fr) 1fr; overflow: hidden; cursor: pointer; animation: ks-in 1.5s ease-out; }
-.er-col { position: relative; overflow: hidden; }
-.er-col::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #000, transparent 18%, transparent 82%, #000); pointer-events: none; }
-.er-strip { display: flex; flex-direction: column; gap: 28px; padding: 0 28px; }
-.er-strip img { width: 100%; border-radius: 10px; opacity: 0.75; box-shadow: 0 0 30px rgba(120, 90, 255, 0.25); }
-.er-col.left .er-strip { animation: er-up var(--dur) linear forwards; }
-.er-col.right .er-strip { animation: er-down var(--dur) linear forwards; }
-@keyframes er-up { from { transform: translateY(0); } to { transform: translateY(-50%); } }
-@keyframes er-down { from { transform: translateY(-50%); } to { transform: translateY(0); } }
-.er-center { position: relative; overflow: hidden; }
+.endroll { position: fixed; inset: 0; z-index: 70; overflow: hidden; background: linear-gradient(180deg, #05040f 0%, #120a2e 45%, #2a1440 75%, #4a2338 100%); animation: ks-in 2s ease-out; }
+/* 夜明け前の空：だんだん明るくなっていく */
+.er-sky { position: absolute; inset: 0; pointer-events: none; }
+.er-sky::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(255, 150, 90, 0.35) 100%); opacity: 0; animation: er-dawn var(--dur, 64s) linear forwards; }
+@keyframes er-dawn { to { opacity: 1; } }
+.er-aurora { position: absolute; left: -20%; right: -20%; top: 4%; height: 38%; background: radial-gradient(ellipse 40% 60% at 30% 50%, rgba(90, 255, 200, 0.18), transparent 70%), radial-gradient(ellipse 45% 55% at 70% 40%, rgba(170, 110, 255, 0.2), transparent 70%); filter: blur(18px); animation: er-aurora 18s ease-in-out infinite alternate; }
+@keyframes er-aurora { from { transform: translateX(-4%) skewX(-6deg); opacity: 0.7; } to { transform: translateX(4%) skewX(6deg); opacity: 1; } }
+.er-moon { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fffaf0, #d8d2e8 55%, #9a93b8); box-shadow: 0 0 40px rgba(230, 220, 255, 0.5); }
+.er-moon.big { width: 110px; height: 110px; right: 12%; top: 9%; }
+.er-moon.small { width: 46px; height: 46px; right: 24%; top: 6%; opacity: 0.85; animation: er-blink 9s ease-in-out infinite; }
+@keyframes er-blink { 0%, 90%, 100% { opacity: 0.85; } 94% { opacity: 0.4; } }
+.er-motes span { position: absolute; bottom: -10px; width: 3px; height: 3px; border-radius: 50%; background: #bff4ff; box-shadow: 0 0 6px #7fe8ff; opacity: 0; animation: er-rise linear infinite; }
+@keyframes er-rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.8; } 85% { opacity: 0.6; } 100% { transform: translateY(-105vh) translateX(20px); opacity: 0; } }
+.er-city { position: absolute; left: 0; right: 0; bottom: 0; height: 20%; background: linear-gradient(180deg, #0d0820, #05030c); clip-path: polygon(0% 45%, 4% 45%, 4% 78%, 9% 78%, 9% 30%, 11% 30%, 11% 55%, 13% 55%, 13% 70%, 15% 70%, 15% 30%, 18% 30%, 18% 62%, 20% 62%, 20% 30%, 25% 30%, 25% 30%, 28% 30%, 28% 30%, 33% 30%, 33% 45%, 35% 45%, 35% 70%, 37% 70%, 37% 30%, 42% 30%, 42% 30%, 45% 30%, 45% 55%, 48% 55%, 48% 45%, 53% 45%, 53% 70%, 55% 70%, 55% 70%, 59% 70%, 59% 30%, 62% 30%, 62% 55%, 65% 55%, 65% 70%, 67% 70%, 67% 70%, 69% 70%, 69% 70%, 71% 70%, 71% 62%, 74% 62%, 74% 85%, 79% 85%, 79% 62%, 83% 62%, 83% 55%, 88% 55%, 88% 45%, 92% 45%, 92% 78%, 95% 78%, 95% 30%, 98% 30%, 98% 70%, 100% 70%, 100% 100%, 0 100%); }
+.er-city::after { content: ''; }
+/* 絵は一枚ずつ、左右交互にふわっと浮かんで消える */
+.er-shots { position: absolute; inset: 0; pointer-events: none; }
+.er-shot { position: absolute; top: 50%; width: min(30vw, 440px); border-radius: 12px; opacity: 0; box-shadow: 0 0 50px rgba(120, 90, 255, 0.35); animation-name: er-shot; animation-timing-function: ease-in-out; animation-fill-mode: both; }
+.er-shot.left { left: 4%; }
+.er-shot.right { right: 4%; }
+@keyframes er-shot { 0% { opacity: 0; transform: translateY(-46%) scale(1.04); } 20% { opacity: 0.85; } 80% { opacity: 0.85; } 100% { opacity: 0; transform: translateY(-54%) scale(1.1); } }
+/* 真ん中のクレジット */
+.er-center { position: absolute; left: 50%; top: 0; bottom: 0; width: min(560px, 90vw); transform: translateX(-50%); overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(180deg, transparent, #000 15%, #000 85%, transparent); }
 .er-scroll { position: absolute; left: 0; right: 0; top: 100%; text-align: center; animation: er-roll var(--dur) linear forwards; }
 @keyframes er-roll { from { transform: translateY(0); } to { transform: translateY(calc(-100% - 100vh)); } }
-.er-block { margin: 0 0 9vh; }
-.er-head { font-family: 'Cinzel', 'Noto Sans JP', serif; color: var(--gold); letter-spacing: 0.25em; font-size: 0.95rem; margin-bottom: 10px; }
+.er-block { margin: 0 0 12vh; }
+.er-head { font-family: 'Cinzel', 'Noto Sans JP', serif; color: var(--gold); letter-spacing: 0.25em; font-size: 0.95rem; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255, 209, 102, 0.5); }
 .er-block:first-child .er-head { font-size: 2.2rem; letter-spacing: 0.2em; background: linear-gradient(90deg, #e3d6ff, #7fe8ff 60%, #ffe7a3); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.er-line { color: #e8e2ff; font-size: 1.05rem; line-height: 2; }
-@media (max-width: 760px) { .endroll { grid-template-columns: 0.6fr 1.6fr 0.6fr; } .er-line { font-size: 0.85rem; } }
-@media (prefers-reduced-motion: reduce) { .er-strip { animation: none !important; } }
+.er-line { color: #f0ebff; font-size: 1.05rem; line-height: 2; text-shadow: 0 0 8px rgba(0, 0, 0, 0.9); }
+@media (max-width: 760px) { .er-shot { width: 40vw; } .er-line { font-size: 0.85rem; } }
+@media (prefers-reduced-motion: reduce) { .er-motes, .er-aurora { animation: none !important; } }
 .er-voice { margin-bottom: 14px; }
 .er-role { color: var(--muted); font-size: 0.8rem; }

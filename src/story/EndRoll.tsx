@@ -1,7 +1,8 @@
 /**
  * 第一部のエンドロール。真ん中をクレジットが下から上へ流れ、左右にこれまでの印象的な絵が流れていく。
  * 曲は public/bgm/credits.mp3（無ければ ending を代わりに流す）。曲が終わる長さに合わせて流す。
- * クリック / Enter / Esc で飛ばせる。
+ * 飛ばすのは「スキップ」ボタンだけ（うっかりクリックで終わらないように）。
+ * 背景は夜明け前の空：オーロラがゆらぎ、ナノマシンの光の粒が立ちのぼる。
  */
 import { useEffect, useRef, useState } from 'react';
 import { VOICE_CAST } from './voiceKey';
@@ -9,9 +10,8 @@ import { playBgm } from '../ui/bgm';
 
 const IMG_BASE = '../story/';
 
-/** 左右に流す絵（第1話〜第7話の印象的な場面） */
-const LEFT = ['ep1/01-pod', 'ep1/07-surface', 'ep2/02-girl', 'ep2/15-candle', 'ep3/02-crossing', 'ep3/20-sora-shout', 'ep4/10-archive-core', 'ep5/10-flashback-office', 'ep6/12-untouched', 'ep7/13-camp', 'ep7/23-hotfix'];
-const RIGHT = ['ep1/08-smoke', 'ep2/12-tower-top', 'ep2/13-girl-ready', 'ep3/14-hachiko', 'ep3/26-mother', 'ep4/12-oracle-form', 'ep4/18-alone', 'ep5/20-sticky-note', 'ep6/18-grave', 'ep7/20-final-chant', 'ep7/25-dawn-top'];
+/** ゆっくり一枚ずつ浮かぶ絵（左右交互に）。全部は出さず、物語の節目だけ */
+const SHOTS = ['ep1/08-smoke', 'ep2/15-candle', 'ep3/26-mother', 'ep5/20-sticky-note', 'ep6/18-grave', 'ep7/13-camp', 'ep7/25-dawn-top'];
 
 type Block = { head?: string; lines: string[]; voices?: { name: string; roles: string }[] };
 
@@ -52,11 +52,6 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
     // 曲の長さに合わせて流す（読めなければ2分）
     const a = new Audio('../bgm/credits.mp3');
     a.addEventListener('loadedmetadata', () => a.duration && isFinite(a.duration) && setDur(Math.max(60, a.duration - 4)));
-    const onKey = (e: KeyboardEvent) => {
-      if (['Enter', 'Escape', ' '].includes(e.key)) doneRef.current();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   useEffect(() => {
@@ -64,19 +59,32 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
     return () => clearTimeout(t);
   }, [dur]);
 
-  const col = (imgs: string[], cls: string) => (
-    <div className={`er-col ${cls}`} style={{ '--dur': `${dur}s` } as React.CSSProperties} aria-hidden>
-      <div className="er-strip">
-        {[...imgs, ...imgs].map((p, i) => (
-          <img key={i} src={`${IMG_BASE}${p}.jpg`} alt="" />
-        ))}
-      </div>
-    </div>
-  );
+  // 絵は一枚ずつ、左右交互に、ゆっくりフェードしながら少しずつ寄っていく
+  const per = dur / SHOTS.length;
+  const shots = SHOTS.map((p, i) => (
+    <img
+      key={p}
+      className={`er-shot ${i % 2 === 0 ? 'left' : 'right'}`}
+      src={`${IMG_BASE}${p}.jpg`}
+      alt=""
+      style={{ animationDelay: `${i * per}s`, animationDuration: `${per + 2}s` } as React.CSSProperties}
+    />
+  ));
 
   return (
-    <div className="endroll" role="dialog" aria-label="エンドロール" onClick={() => onDone()}>
-      {col(LEFT, 'left')}
+    <div className="endroll" role="dialog" aria-label="エンドロール" style={{ '--dur': `${dur}s` } as React.CSSProperties}>
+      <div className="er-sky" aria-hidden>
+        <div className="er-aurora" />
+        <div className="er-moon big" />
+        <div className="er-moon small" />
+        <div className="er-motes">
+          {Array.from({ length: 40 }, (_, i) => (
+            <span key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i * 1.7) % 14}s`, animationDuration: `${12 + (i % 7) * 2}s` } as React.CSSProperties} />
+          ))}
+        </div>
+        <div className="er-city" />
+      </div>
+      <div className="er-shots" aria-hidden>{shots}</div>
       <div className="er-center">
         <div className="er-scroll" style={{ '--dur': `${dur}s` } as React.CSSProperties}>
           {credits().map((b, i) => (
@@ -95,7 +103,6 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
           ))}
         </div>
       </div>
-      {col(RIGHT, 'right')}
       <button className="ks-skip" onClick={(e) => { e.stopPropagation(); onDone(); }}>スキップ ▶▶</button>
     </div>
   );
