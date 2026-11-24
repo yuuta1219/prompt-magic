@@ -23,6 +23,7 @@ export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?:
   自販機型術式体: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.06 },
   門番術式体ケルベロス: { speaker: 21, name: '剣崎雌雄', speed: 0.95, pitch: -0.06 },
   // 第2話
+  少女: { speaker: 6, name: '四国めたん（ツンツン）', speed: 1.1 }, // 名乗る前のノワール
   ノワール: { speaker: 6, name: '四国めたん（ツンツン）', speed: 1.1 },
   ミナト: { speaker: 2, name: '四国めたん', speed: 1.05 },
   長老: { speaker: 42, name: 'ちび式じい', speed: 1.0 },
