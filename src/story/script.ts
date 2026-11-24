@@ -5,7 +5,7 @@
  *   # 第1話「話の名前」
  *   ## プロローグ
  *   ## チャプター1「タイトル」（敵: 敵の名前）
- *   ### 戦闘の前 / ### 勝ったあと
+ *   ### 戦闘の前 / ### 勝ったあと（負けイベントは ### 負けたあと）
  *   --- ページ1（絵:01-pod / 色:alarm / 演出:shake）   ← 絵なし・色・演出は省略できる
  *   名前「セリフ」          ← 行の最後の 」 までがセリフ
  *   【中央】文字            ← 画面の真ん中に出る（全部が【中央】のページは話タイトルの扱い）
@@ -19,6 +19,8 @@ export interface ParsedChapter {
   enemy: string;
   before: StoryPage[];
   after: StoryPage[];
+  /** 負けイベント（「### 負けたあと」がある）。戦闘に負けても話が進む */
+  loseEvent?: boolean;
 }
 
 export interface ParsedScript {
@@ -99,6 +101,11 @@ export function parseScript(text: string): ParsedScript {
     } else if (/^###\s+勝ったあと/.test(line)) {
       finishPage();
       target = out.chapters[out.chapters.length - 1]?.after ?? null;
+    } else if (/^###\s+負けたあと/.test(line)) {
+      finishPage();
+      const ch = out.chapters[out.chapters.length - 1];
+      if (ch) ch.loseEvent = true;
+      target = ch?.after ?? null;
     } else if ((m = line.match(/^---\s*ページ\d*\s*(?:[（(](.*)[)）])?/))) {
       finishPage();
       page = { ...parseMeta(m[1] ?? ''), lines: [] };
