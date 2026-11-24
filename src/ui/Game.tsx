@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { App, type BattleSpec } from './App';
 import { Sugoroku } from './Sugoroku';
+import { EpisodeSelect } from './EpisodeSelect';
 import { SkillTree } from './SkillTree';
 import { Kamishibai } from '../story/Kamishibai';
 import { playBgm, type BgmName } from './bgm';
@@ -19,6 +20,7 @@ import { applyDevGrant, loadProgress, markStorySeen, newProgress, saveProgress, 
 export const FREE_FIRST_STAGE = 6;
 
 type Screen =
+  | { k: 'episodes' }
   | { k: 'map'; focus?: string }
   | { k: 'story'; scene: StoryScene; then: () => void }
   | { k: 'battle'; spec: BattleSpec; chapter?: Chapter; id: number };
@@ -51,7 +53,7 @@ export function Game() {
         toMap(ep.chapters[0].id);
       },
     });
-  const [screen, setScreen] = useState<Screen>(() => ({ k: 'map' }));
+  const [screen, setScreen] = useState<Screen>(() => ({ k: 'episodes' }));
   // はじめて開いたとき・はじめての話に来たときは、マップより先にプロローグ
   useEffect(() => {
     if (!progressRef.current.story.includes(ep.prologue.id)) playPrologue();
@@ -86,7 +88,8 @@ export function Game() {
 
   // BGM: マップはメインテーマ、紙芝居はその場面の曲（戦闘中の曲は戦闘画面が決める）
   useEffect(() => {
-    if (screen.k === 'map') playBgm((ep.mapBgm as BgmName | undefined) ?? 'main');
+    if (screen.k === 'episodes') playBgm('main');
+    else if (screen.k === 'map') playBgm((ep.mapBgm as BgmName | undefined) ?? 'main');
     else if (screen.k === 'story') playBgm((screen.scene.bgm as BgmName | undefined) ?? 'underground');
   }, [screen, ep]);
 
@@ -94,6 +97,44 @@ export function Game() {
 
   if (screen.k === 'battle')
     return <App key={screen.id} progress={progress} setProgress={setProgress} battle={screen.spec} onLeave={leaveBattle} />;
+
+  const freeOpen = episodeCleared(EPISODES[0], progress.story);
+  const tree = treeOpen && (
+    <SkillTree
+      progress={progress}
+      inBattle={false}
+      onClose={() => setTreeOpen(false)}
+      onUnlock={(id) => {
+        const r = unlockSkill(progressRef.current, id);
+        if (typeof r === 'string') return r;
+        setProgress(r);
+        return null;
+      }}
+      onReset={() => {
+        setProgress(newProgress());
+        setTreeOpen(false);
+      }}
+    />
+  );
+
+  if (screen.k === 'episodes')
+    return (
+      <>
+        <EpisodeSelect
+          episodes={EPISODES.map((e, i) => ({ ep: e, open: episodeOpen(i, progress.story), cleared: episodeCleared(e, progress.story) }))}
+          progress={progress}
+          current={epIdx}
+          onPick={(i) => {
+            setEpIdx(i);
+            setScreen({ k: 'map' });
+          }}
+          onTree={() => setTreeOpen(true)}
+          onFree={startFree}
+          freeOpen={freeOpen}
+        />
+        {tree}
+      </>
+    );
 
   return (
     <>
@@ -112,24 +153,9 @@ export function Game() {
           setEpIdx(i);
           setScreen({ k: 'map' });
         }}
+        onBack={() => setScreen({ k: 'episodes' })}
       />
-      {treeOpen && (
-        <SkillTree
-          progress={progress}
-          inBattle={false}
-          onClose={() => setTreeOpen(false)}
-          onUnlock={(id) => {
-            const r = unlockSkill(progressRef.current, id);
-            if (typeof r === 'string') return r;
-            setProgress(r);
-            return null;
-          }}
-          onReset={() => {
-            setProgress(newProgress());
-            setTreeOpen(false);
-          }}
-        />
-      )}
+      {tree}
     </>
   );
 }

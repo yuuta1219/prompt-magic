@@ -1388,3 +1388,30 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .map-tabs { display: flex; gap: 4px; margin-right: 8px; }
 .map-tabs button { padding: 3px 10px; font-size: 0.8rem; }
 .map-tabs button.on { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px rgba(255, 209, 102, 0.4); }
+
+/* ================================================ 話を選ぶマップ（ワールドマップ） */
+.world-board {
+  background:
+    radial-gradient(ellipse 40% 30% at 85% 15%, rgba(170, 80, 255, 0.18), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 40% 80%, rgba(79, 227, 255, 0.1), transparent 70%),
+    linear-gradient(180deg, #120c26, #07050f);
+}
+/* 隅田川っぽい光の帯 */
+.world-board::after { content: ''; position: absolute; left: 66%; top: -5%; width: 6%; height: 110%; transform: rotate(14deg); background: linear-gradient(180deg, transparent, rgba(120, 170, 255, 0.12), transparent); filter: blur(6px); pointer-events: none; }
+.world-spot { position: absolute; transform: translate(-50%, -50%); width: clamp(78px, 8vw, 112px); aspect-ratio: 1; padding: 0; border-radius: 50%; border: 3px solid var(--line-strong); background: #140e28; z-index: 1; transition: transform 0.15s; }
+.world-spot:hover:not(:disabled) { transform: translate(-50%, -50%) scale(1.07); background: #140e28; }
+.ws-pin { position: absolute; inset: 0; border-radius: 50%; background-size: cover; background-position: center; }
+.world-spot.st-locked .ws-pin { background: repeating-linear-gradient(45deg, #1a1430, #1a1430 8px, #120d24 8px, #120d24 16px); }
+.world-spot.st-locked { opacity: 0.6; }
+.world-spot.st-done { border-color: var(--gold); }
+.world-spot.st-open { border-color: var(--cyan); box-shadow: 0 0 18px rgba(79, 227, 255, 0.6); }
+.world-spot.here.st-open { animation: node-pulse 1.4s ease-in-out infinite alternate; }
+.world-spot.sel { outline: 3px solid #fff; outline-offset: 4px; }
+.ws-no { position: absolute; top: -8px; left: -8px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #2a1f55; border: 2px solid var(--accent); font-family: 'Cinzel', serif; font-weight: 900; }
+.st-done .ws-no { background: var(--gold); color: #1a1000; border-color: #fff3c4; }
+.ws-label { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; white-space: nowrap; text-shadow: 0 0 6px #000, 0 0 2px #000; }
+.ws-place { font-size: 0.7rem; color: var(--accent); letter-spacing: 0.15em; }
+.ws-title { font-size: 0.82rem; font-weight: 700; }
+.st-locked .ws-title { color: var(--muted); }
+.map-back { flex-shrink: 0; }
+@media (max-width: 760px) { .world-spot { width: 58px; } .ws-title { font-size: 0.68rem; } }

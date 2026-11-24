@@ -34,6 +34,7 @@ export function Sugoroku({
   episodes,
   epIdx,
   onEpisode,
+  onBack,
 }: {
   episode: Episode;
   progress: Progress;
@@ -46,6 +47,8 @@ export function Sugoroku({
   episodes: { title: string; open: boolean }[];
   epIdx: number;
   onEpisode: (idx: number) => void;
+  /** マップ（話を選ぶ画面）に戻る */
+  onBack: () => void;
 }) {
   const done = progress.story;
   const cleared = episodeCleared(episode, done);
@@ -88,17 +91,8 @@ export function Sugoroku({
   return (
     <div className="map">
       <header className="map-h">
-        <a className="map-logo" href="../">PROMPT MAGIC</a>
+        <button className="map-back" onClick={onBack}>← マップ</button>
         <div className="map-ep">
-          {episodes.length > 1 && (
-            <div className="map-tabs">
-              {episodes.map((e, i) => (
-                <button key={i} className={i === epIdx ? 'on' : ''} disabled={!e.open} onClick={() => onEpisode(i)}>
-                  {e.open ? e.title : '🔒'}
-                </button>
-              ))}
-            </div>
-          )}
           <span className="map-ep-no">{episode.title}</span>
           <span className="map-ep-name">{episode.subtitle}</span>
         </div>
