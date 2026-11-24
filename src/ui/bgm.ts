@@ -32,6 +32,10 @@ function fade(a: HTMLAudioElement, to: number, ms: number, done?: () => void) {
 
 let cur: { name: BgmName; el: HTMLAudioElement } | null = null;
 
+/** 同じ曲の別バージョン。切り替えるとき、前の曲が流れていた位置から続ける（前半を1分聞いていたら、後半も1分のところから） */
+const SAME_SONG: BgmName[][] = [['battle-1', 'battle-2']];
+const sameSong = (a: BgmName, b: BgmName) => SAME_SONG.some((g) => g.includes(a) && g.includes(b));
+
 /** 流す曲を決める（同じ曲なら続きから流しっぱなし）。null で止める */
 export function playBgm(name: BgmName | null): void {
   if (!soundOn()) name = null;
@@ -47,6 +51,11 @@ export function playBgm(name: BgmName | null): void {
   const el = new Audio(`${BASE}${name}.mp3`);
   el.loop = true;
   el.volume = 0;
+  if (old && sameSong(old.name, name)) {
+    const t = old.el.currentTime;
+    // 曲の長さが分かってから位置を合わせる（後半のほうが短ければ、頭に戻る）
+    el.addEventListener('loadedmetadata', () => (el.currentTime = el.duration ? t % el.duration : t), { once: true });
+  }
   el.play().then(() => fade(el, VOLUME, FADE_MS)).catch(() => {});
   cur = { name, el };
 }
