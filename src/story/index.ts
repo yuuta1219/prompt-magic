@@ -1,9 +1,10 @@
 /** ストーリーモード: 話・チャプターの一覧と、どこまで進めるか */
 import { EPISODE1 } from './episode1';
 import { EPISODE2 } from './episode2';
+import { EPISODE3 } from './episode3';
 import type { Chapter, Episode, StoryPage, StoryScene } from './types';
 
-export const EPISODES: Episode[] = [EPISODE1, EPISODE2];
+export const EPISODES: Episode[] = [EPISODE1, EPISODE2, EPISODE3];
 
 /** 話を選べるか（前の話をクリアしていれば選べる） */
 export function episodeOpen(idx: number, done: readonly string[]): boolean {

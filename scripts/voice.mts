@@ -8,12 +8,12 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseScript } from '../src/story/script.ts';
-import { VOICE_CAST, speakable, voiceKey } from '../src/story/voiceKey.ts';
+import { VOICE_CAST, speakable, speakerFor, voiceKey } from '../src/story/voiceKey.ts';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const OUT = join(ROOT, 'public/voice');
 const URL_BASE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
-const SCRIPTS = ['src/story/ep1.txt', 'src/story/ep2.txt'];
+const SCRIPTS = ['src/story/ep1.txt', 'src/story/ep2.txt', 'src/story/ep3.txt'];
 
 mkdirSync(OUT, { recursive: true });
 const want = new Map<string, { who: string; text: string }>();
@@ -36,12 +36,13 @@ let made = 0;
 for (const [key, { who, text }] of want) {
   const mp3 = join(OUT, `${key}.mp3`);
   const c = VOICE_CAST[who];
-  const how = JSON.stringify([c.speaker, c.speed ?? 1, c.pitch ?? 0, c.intonation ?? 1, speakable(text)]);
+  const speaker = speakerFor(who, text);
+  const how = JSON.stringify([speaker, c.speed ?? 1, c.pitch ?? 0, c.intonation ?? 1, speakable(text)]);
   if (existsSync(mp3) && (spoken[key] === undefined || spoken[key] === how)) {
     spoken[key] = how;
     continue;
   }
-  const q = await fetch(`${URL_BASE}/audio_query?speaker=${c.speaker}&text=${encodeURIComponent(speakable(text))}`, { method: 'POST' });
+  const q = await fetch(`${URL_BASE}/audio_query?speaker=${speaker}&text=${encodeURIComponent(speakable(text))}`, { method: 'POST' });
   if (!q.ok) throw new Error(`audio_query に失敗: ${who}「${text}」 ${q.status}`);
   const query = await q.json();
   query.speedScale = c.speed ?? 1;
@@ -49,7 +50,7 @@ for (const [key, { who, text }] of want) {
   query.intonationScale = c.intonation ?? 1;
   query.prePhonemeLength = 0.05;
   query.postPhonemeLength = 0.15;
-  const r = await fetch(`${URL_BASE}/synthesis?speaker=${c.speaker}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query) });
+  const r = await fetch(`${URL_BASE}/synthesis?speaker=${speaker}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(query) });
   if (!r.ok) throw new Error(`synthesis に失敗: ${who}「${text}」 ${r.status}`);
   const wav = join(OUT, `${key}.wav`);
   writeFileSync(wav, Buffer.from(await r.arrayBuffer()));

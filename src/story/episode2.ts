@@ -30,6 +30,7 @@ export const EPISODE2: Episode = {
   prologueThumb: 'ep2/01-ruins',
   /** 第2話のマップの曲は、廃墟を歩く曲（本人の指定） */
   mapBgm: 'ep2-field',
+  nextThumb: 'ep2/14-tower-silent',
   prologueTitle: '地上の三日間',
   prologueDesc: '折れた塔を目指して、廃墟の東京を歩く。',
   chapters: script.chapters.map((c) => ({

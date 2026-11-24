@@ -30,7 +30,20 @@ export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?:
   村人: { speaker: 11, name: '玄野武宏', speed: 1.1 },
   電波塔術式体トウキョウ: { speaker: 13, name: '青山龍星', speed: 0.95, pitch: -0.05 },
   声: { speaker: 13, name: '青山龍星', speed: 0.9, pitch: -0.08 },
+  // 第3話（「ソラの文字」「ハルの文字」は筆談なので声なし）
+  ソラ: { speaker: 12, name: '白上虎太郎', speed: 1.0 },
+  ハル: { speaker: 54, name: '春歌ナナ', speed: 0.95 },
+  母: { speaker: 109, name: '東北イタコ', speed: 1.0 },
+  フィルター術式体: { speaker: 89, name: 'Voidoll', speed: 1.0 },
+  フィルター術式体の残骸: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.04 },
+  モデレーター: { speaker: 89, name: 'Voidoll', speed: 0.85, pitch: -0.1 },
 };
+
+/** やにかわの（ ）つきのセリフは、声に出せない場面の心の声なので、ささやき声にする */
+export const WHISPER: Record<string, number> = { やにかわ: 117 };
+export function speakerFor(who: string, text: string): number {
+  return text.startsWith('（') && WHISPER[who] ? WHISPER[who] : VOICE_CAST[who].speaker;
+}
 
 /** 声に出すときだけ読みを直す（画面の文字はそのまま） */
 export function speakable(text: string): string {
@@ -42,7 +55,7 @@ export function speakable(text: string): string {
     .replace(/なき者/g, 'なきもの') // 「なきしゃ」と読まれる
     .replace(/門を開け/g, 'もんをひらけ') // 「あけ」と読まれる
     .replace(/delete/gi, 'デリート')
-    .replace(/[《》]/g, '')
+    .replace(/[《》（）]/g, '')
     .replace(/天穿つ/g, 'てんうがつ')
     .replace(/魔塔/g, 'まとう')
     .replace(/災禍姫/g, 'さいかひめ')
@@ -63,6 +76,11 @@ export function speakable(text: string): string {
     .replace(/十分。/g, 'じゅっぷん。') // 「じゅうぶん」と読まれる
     .replace(/右腕/g, 'みぎうで') // 「うわん」と読まれる
     .replace(/一行/g, 'いちぎょう') // 「いっこう」と読まれる
+    .replace(/術式体/g, 'じゅつしきたい') // 「消音術式体だ」が「からだ」と読まれる
+    .replace(/ワードハ/g, 'ワードワ') // カタカナの「ハ」が「は」と読まれる
+    .replace(/止めれば/g, 'とめれば') // 「やめれば」と読まれる
+    .replace(/^……は？$/, 'はっ？') // 「わ？」と読まれる
+    .replace(/になって消えた/g, 'になってきえた') // 「ぎえた」と読まれる
     .replace(/[“”「」]/g, '')
     .replace(/――/g, '、');
 }

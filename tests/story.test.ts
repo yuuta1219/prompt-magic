@@ -83,3 +83,18 @@ describe('台本の絵の指定', () => {
       if (p.img) expect(p.img).toMatch(/^ep[12]\/[0-9]{2}-[a-z-]+$/);
   });
 });
+
+describe('第3話', () => {
+  const ep3 = EPISODES[2];
+  it('プロローグと5チャプター。強さはステージ11〜15（チャプター5は強敵）', () => {
+    expect(ep3.prologue.pages.length).toBeGreaterThan(0);
+    expect(ep3.chapters.map((c) => c.stage)).toEqual([11, 12, 13, 14, 15]);
+    expect(ep3.chapters[4].enemy).toBe('検閲術式体モデレーター');
+  });
+  it('筆談（ソラの文字・ハルの文字）には声をつけない。やにかわの（ ）はささやき声', async () => {
+    const { VOICE_CAST, speakerFor } = await import('../src/story/voiceKey');
+    expect(VOICE_CAST['ソラの文字']).toBeUndefined();
+    expect(VOICE_CAST['ハルの文字']).toBeUndefined();
+    expect(speakerFor('やにかわ', '（ずるいな）')).not.toBe(speakerFor('やにかわ', 'ずるいな'));
+  });
+});
