@@ -98,3 +98,19 @@ describe('第3話', () => {
     expect(speakerFor('やにかわ', '（ずるいな）')).not.toBe(speakerFor('やにかわ', 'ずるいな'));
   });
 });
+
+describe('第4話〜第7話', () => {
+  it('7話までつながっていて、各話5チャプター', () => {
+    expect(EPISODES.map((e) => e.id)).toEqual(['ep1', 'ep2', 'ep3', 'ep4', 'ep5', 'ep6', 'ep7']);
+    for (const e of EPISODES) expect(e.chapters).toHaveLength(5);
+  });
+  it('第7話のチャプター3（オラクル戦）は負けイベント', () => {
+    const c = EPISODES[6].chapters[2];
+    expect(c.loseEvent).toBe(true);
+    expect(c.after.length).toBeGreaterThan(0);
+  });
+  it('ロボのセリフのカタカナの送りがなを読めるようにする', async () => {
+    const { speakable } = await import('../src/story/voiceKey');
+    expect(speakable('……ワタシヲ、置イテ、行ケ。')).toBe('……ワタシヲ、置いて、行け。');
+  });
+});

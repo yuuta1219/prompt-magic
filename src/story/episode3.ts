@@ -31,6 +31,7 @@ export const EPISODE3: Episode = {
   prologueTitle: '水晶の交差点',
   prologueDesc: '渋谷に、誰もいない。人の形をした水晶だけが立っている。',
   mapBgm: 'ep3-main',
+  nextThumb: 'ep3/27-yanikawa-alone',
   chapters: script.chapters.map((c) => ({
     id: `ep3-c${c.no}`,
     no: c.no,

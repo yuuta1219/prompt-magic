@@ -61,7 +61,7 @@ export function Game() {
     setScreen({
       k: 'story',
       scene: chapterBefore(c),
-      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, bgm: c.bgm?.battle as [BgmName, BgmName] | undefined, label: `チャプター${c.no} ${c.title}` } }),
+      then: () => setScreen({ k: 'battle', chapter: c, id: ++battleId.current, spec: { kind: 'chapter', stage: c.stage, enemy: c.enemy, enemySprite: c.sprite, loseEvent: c.loseEvent, bgm: c.bgm?.battle as [BgmName, BgmName] | undefined, label: `チャプター${c.no} ${c.title}` } }),
     });
 
   const startFree = () => {

@@ -37,6 +37,22 @@ export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?:
   フィルター術式体: { speaker: 89, name: 'Voidoll', speed: 1.0 },
   フィルター術式体の残骸: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.04 },
   モデレーター: { speaker: 89, name: 'Voidoll', speed: 0.85, pitch: -0.1 },
+  // 第4話〜第7話
+  改札術式体: { speaker: 89, name: 'Voidoll', speed: 1.05 },
+  記録の声: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 1.0 },
+  認証の声: { speaker: 48, name: 'ナースロボ＿タイプＴ（楽々）', speed: 1.0 },
+  駅舎術式体ステーションマスター: { speaker: 21, name: '剣崎雌雄', speed: 0.9, pitch: -0.06 },
+  入館管理術式体: { speaker: 89, name: 'Voidoll', speed: 1.0 },
+  上司の記録: { speaker: 52, name: '雀松朱司', speed: 1.05 },
+  過去のやにかわ: { speaker: 116, name: 'あんこもん（けだるげ）', speed: 1.0 },
+  未処理例外術式体: { speaker: 89, name: 'Voidoll', speed: 0.95, pitch: -0.04 },
+  '統合術式体M&A': { speaker: 13, name: '青山龍星', speed: 0.9, pitch: -0.06 },
+  炎上の亡霊: { speaker: 117, name: 'あんこもん（ささやき）', speed: 1.0 },
+  謎の声: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 0.9, pitch: -0.05 },
+  軍用ロボ: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 0.9, pitch: -0.05 },
+  サージ: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 0.9, pitch: -0.05 },
+  防衛術式体アイギス: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.08 },
+  完全体試作: { speaker: 102, name: 'ユーレイちゃん', speed: 1.0 },
 };
 
 /** やにかわの（ ）つきのセリフは、声に出せない場面の心の声なので、ささやき声にする */
@@ -46,8 +62,16 @@ export function speakerFor(who: string, text: string): number {
 }
 
 /** 声に出すときだけ読みを直す（画面の文字はそのまま） */
-export function speakable(text: string): string {
+/** ロボのセリフ（「止メロ」「残ッテイル」のように送りがながカタカナ）を読めるように、漢字のあとのカタカナをひらがなにする */
+function robotKana(text: string): string {
+  if (!/[一-龥々][ァ-ヶ]/.test(text)) return text;
   return text
+    .replace(/([一-龥々])([ァ-ヶー]+)/g, (_, k: string, kana: string) => k + kana.replace(/[ァ-ヶ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60)))
+    .replace(/ハ(?=[、。！？]|$)/g, 'わ');
+}
+
+export function speakable(text: string): string {
+  return robotKana(text)
     .replace(/汝/g, 'なんじ')
     .replace(/我は/g, 'われは')
     .replace(/術式霧/g, 'じゅつしききり')
@@ -80,7 +104,15 @@ export function speakable(text: string): string {
     .replace(/ワードハ/g, 'ワードワ') // カタカナの「ハ」が「は」と読まれる
     .replace(/止めれば/g, 'とめれば') // 「やめれば」と読まれる
     .replace(/^……は？$/, 'はっ？') // 「わ？」と読まれる
-    .replace(/になって消えた/g, 'になってきえた') // 「ぎえた」と読まれる
+    .replace(/て消えた/g, 'てきえた') // 「ぎえた」と読まれる
+    .replace(/MISSION……FAILED/g, 'ミッション……フェイルド')
+    .replace(/US……ARMY/g, 'ユーエス……アーミー')
+    .replace(/TODO/g, 'トゥードゥー')
+    .replace(/M&A/g, 'エムアンドエー')
+    .replace(/AI/g, 'エーアイ')
+    .replace(/体の/g, 'からだの')
+    .replace(/体が/g, 'からだが')
+    .replace(/体に/g, 'からだに')
     .replace(/[“”「」]/g, '')
     .replace(/――/g, '、');
 }

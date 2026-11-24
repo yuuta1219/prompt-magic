@@ -66,8 +66,18 @@ const all = new Set<HTMLAudioElement>();
 let cur: { name: BgmName; el: HTMLAudioElement } | null = null;
 
 /** 同じ曲の別バージョン。切り替えるとき、前の曲が流れていた位置から続ける（前半を1分聞いていたら、後半も1分のところから） */
-const SAME_SONG: BgmName[][] = [['battle-1', 'battle-2'], ['ep2-battle-1', 'ep2-battle-2'], ['ep3-battle-1', 'ep3-battle-2']];
+const SAME_SONG: BgmName[][] = [['battle-1', 'battle-2'], ...[2, 3, 4, 5, 6, 7].map((n) => [`ep${n}-battle-1`, `ep${n}-battle-2`])];
 const sameSong = (a: BgmName, b: BgmName) => SAME_SONG.some((g) => g.includes(a) && g.includes(b));
+
+/** ep4〜ep7 の曲がまだ無いときの代わり（同じ役の、前の話の曲） */
+function fallbackFor(name: BgmName): BgmName | undefined {
+  if (FALLBACK[name]) return FALLBACK[name];
+  const m = name.match(/^ep([4-9])-(.+)$/);
+  if (!m) return undefined;
+  const role = m[2];
+  const map: Record<string, string> = { main: 'ep3-main', field: 'ep3-field', tension: 'ep3-tension', 'battle-1': 'ep3-battle-1', 'battle-2': 'ep3-battle-2', boss: 'ep3-boss', ending: 'ep3-ending' };
+  return map[role];
+}
 
 function retire(el: HTMLAudioElement, withFade: boolean) {
   const stop = () => {
@@ -107,7 +117,7 @@ export function playBgm(name: BgmName | null): void {
   const el = new Audio(`${BASE}${name}.mp3`);
   el.loop = true;
   el.volume = 0;
-  const fb = FALLBACK[name];
+  const fb = fallbackFor(name);
   if (fb) el.addEventListener('error', () => (el.src = `${BASE}${fb}.mp3`) && start(el), { once: true });
   if (old && sameSong(old.name, name)) {
     const t = old.el.currentTime;

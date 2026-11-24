@@ -2,9 +2,13 @@
 import { EPISODE1 } from './episode1';
 import { EPISODE2 } from './episode2';
 import { EPISODE3 } from './episode3';
+import { EPISODE4 } from './episode4';
+import { EPISODE5 } from './episode5';
+import { EPISODE6 } from './episode6';
+import { EPISODE7 } from './episode7';
 import type { Chapter, Episode, StoryPage, StoryScene } from './types';
 
-export const EPISODES: Episode[] = [EPISODE1, EPISODE2, EPISODE3];
+export const EPISODES: Episode[] = [EPISODE1, EPISODE2, EPISODE3, EPISODE4, EPISODE5, EPISODE6, EPISODE7];
 
 /** 話を選べるか（前の話をクリアしていれば選べる） */
 export function episodeOpen(idx: number, done: readonly string[]): boolean {

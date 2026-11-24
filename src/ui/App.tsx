@@ -45,6 +45,8 @@ export interface BattleSpec {
   label: string;
   /** 敵の画像（public/units/ の下、拡張子なし） */
   enemySprite?: string;
+  /** 負けイベント：負けても「つづきへ」で話が進む */
+  loseEvent?: boolean;
   /** BGM（前半, 敵の HP 50% 以下）。省略すると battle-1 → battle-2 */
   bgm?: [BgmName, BgmName];
 }
@@ -385,7 +387,7 @@ export function App({
                 {lastReward && <div className="reward">{lastReward}</div>}
                 <div className="overlay-actions">
                   <button onClick={() => setTreeOpen(true)}>🌳 スキルツリー（SP {progress.sp}）</button>
-                  {s.phase === 'victory' && battle.kind === 'chapter' ? (
+                  {battle.kind === 'chapter' && (s.phase === 'victory' || battle.loseEvent) ? (
                     <button className="primary" onClick={() => onLeave(true)}>つづきへ ▶</button>
                   ) : (
                     <button onClick={restart}>{s.phase === 'victory' ? `次の戦闘へ（ステージ${progress.stage}）` : 'もう一度戦う'}</button>

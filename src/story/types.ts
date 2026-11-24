@@ -44,6 +44,8 @@ export interface Chapter {
   before: StoryPage[];
   /** 勝ったあとに流す紙芝居 */
   after: StoryPage[];
+  /** 負けイベント：負けても話が進む（台本の「### 負けたあと」） */
+  loseEvent?: boolean;
   /** BGM: 紙芝居（前・後）と戦闘（前半, 後半） */
   bgm?: { before?: string; after?: string; battle?: [string, string] };
 }
