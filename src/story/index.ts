@@ -1,8 +1,14 @@
 /** ストーリーモード: 話・チャプターの一覧と、どこまで進めるか */
 import { EPISODE1 } from './episode1';
+import { EPISODE2 } from './episode2';
 import type { Chapter, Episode, StoryPage, StoryScene } from './types';
 
-export const EPISODES: Episode[] = [EPISODE1];
+export const EPISODES: Episode[] = [EPISODE1, EPISODE2];
+
+/** 話を選べるか（前の話をクリアしていれば選べる） */
+export function episodeOpen(idx: number, done: readonly string[]): boolean {
+  return idx === 0 || episodeCleared(EPISODES[idx - 1], done);
+}
 export const ALL_CHAPTERS: Chapter[] = EPISODES.flatMap((e) => e.chapters);
 
 /** 進み具合に残す「済み」の印 */

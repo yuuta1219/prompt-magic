@@ -54,4 +54,10 @@ export interface Episode {
   subtitle: string;
   prologue: StoryScene;
   chapters: Chapter[];
+  /** マップのプロローグのマス（絵・見出し・説明） */
+  prologueThumb?: string;
+  prologueTitle?: string;
+  prologueDesc?: string;
+  /** クリアしたあと、次の話のマスに出す絵 */
+  nextThumb?: string;
 }

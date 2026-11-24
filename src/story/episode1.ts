@@ -27,6 +27,10 @@ export const EPISODE1: Episode = {
   title: script.title,
   subtitle: script.subtitle,
   prologue: { id: 'ep1-prologue', pages: script.prologue, bgm: 'underground' },
+  prologueThumb: 'ep1/01-pod',
+  prologueTitle: '812年後の目覚め',
+  prologueDesc: '地下の休眠施設で、カプセルが壊れた。',
+  nextThumb: 'ep1/07-surface',
   chapters: script.chapters.map((c) => ({
     id: `ep1-c${c.no}`,
     no: c.no,

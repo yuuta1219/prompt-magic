@@ -22,6 +22,13 @@ export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?:
   記録: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 1.05 },
   自販機型術式体: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.06 },
   門番術式体ケルベロス: { speaker: 21, name: '剣崎雌雄', speed: 0.95, pitch: -0.06 },
+  // 第2話
+  ノワール: { speaker: 6, name: '四国めたん（ツンツン）', speed: 1.1 },
+  ミナト: { speaker: 2, name: '四国めたん', speed: 1.05 },
+  長老: { speaker: 42, name: 'ちび式じい', speed: 1.0 },
+  村人: { speaker: 11, name: '玄野武宏', speed: 1.1 },
+  電波塔術式体トウキョウ: { speaker: 13, name: '青山龍星', speed: 0.95, pitch: -0.05 },
+  声: { speaker: 13, name: '青山龍星', speed: 0.9, pitch: -0.08 },
 };
 
 /** 声に出すときだけ読みを直す（画面の文字はそのまま） */
@@ -34,6 +41,22 @@ export function speakable(text: string): string {
     .replace(/なき者/g, 'なきもの') // 「なきしゃ」と読まれる
     .replace(/門を開け/g, 'もんをひらけ') // 「あけ」と読まれる
     .replace(/delete/gi, 'デリート')
+    .replace(/[《》]/g, '')
+    .replace(/天穿つ/g, 'てんうがつ')
+    .replace(/魔塔/g, 'まとう')
+    .replace(/災禍姫/g, 'さいかひめ')
+    .replace(/我が/g, 'わが')
+    .replace(/我も/g, 'われも')
+    .replace(/我らが/g, 'われらが')
+    .replace(/我らの/g, 'われらの')
+    .replace(/我の/g, 'われの')
+    .replace(/我こそは/g, 'われこそは')
+    .replace(/我を/g, 'われを')
+    .replace(/顕現/g, 'けんげん')
+    .replace(/煉獄/g, 'れんごく')
+    .replace(/迷い人/g, 'まよいびと') // 「まよいじん」と読まれる
+    .replace(/五分だ/g, 'ごふんだ') // 「ごぶだ」と読まれる
+    .replace(/無言の民/g, 'むごんのたみ') // 「みん」と読まれる
     .replace(/[“”「」]/g, '')
     .replace(/――/g, '、');
 }

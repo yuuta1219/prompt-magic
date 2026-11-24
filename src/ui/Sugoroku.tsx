@@ -31,6 +31,9 @@ export function Sugoroku({
   onChapter,
   onFree,
   onTree,
+  episodes,
+  epIdx,
+  onEpisode,
 }: {
   episode: Episode;
   progress: Progress;
@@ -39,6 +42,10 @@ export function Sugoroku({
   onChapter: (c: Chapter) => void;
   onFree: () => void;
   onTree: () => void;
+  /** 話を切り替える（話のタブと「次の話」のマス） */
+  episodes: { title: string; open: boolean }[];
+  epIdx: number;
+  onEpisode: (idx: number) => void;
 }) {
   const done = progress.story;
   const cleared = episodeCleared(episode, done);
@@ -53,7 +60,7 @@ export function Sugoroku({
 
   const stateOf = (n: NodeKind): 'done' | 'open' | 'locked' => {
     if (n.k === 'prologue') return done.includes(episode.prologue.id) ? 'done' : 'open';
-    if (n.k === 'next') return 'locked';
+    if (n.k === 'next') return cleared && episodes[epIdx + 1]?.open ? 'open' : 'locked';
     if (done.includes(n.c.id)) return 'done';
     return chapterOpen(episode, n.idx, done) ? 'open' : 'locked';
   };
@@ -69,10 +76,13 @@ export function Sugoroku({
       })
       .join(' ');
 
+  const nextTitle = episodes[epIdx + 1]?.title ?? '次の話';
+  /** 修練場は第1話をクリアしたら開く（第2話以降を見ているなら、第1話はクリア済み） */
+  const freeOpen = epIdx > 0 || cleared;
   const selNode = nodes[sel];
   const selState = stateOf(selNode);
   /** マスの絵（まだ開いていないマスは絵なし） */
-  const thumbOf = (n: NodeKind): string | undefined => (n.k === 'chapter' ? n.c.thumb : n.k === 'prologue' ? 'ep1/01-pod' : 'ep1/07-surface');
+  const thumbOf = (n: NodeKind): string | undefined => (n.k === 'chapter' ? n.c.thumb : n.k === 'prologue' ? episode.prologueThumb : episode.nextThumb);
   const selThumb = selState === 'locked' ? undefined : thumbOf(selNode);
 
   return (
@@ -80,14 +90,23 @@ export function Sugoroku({
       <header className="map-h">
         <a className="map-logo" href="../">PROMPT MAGIC</a>
         <div className="map-ep">
+          {episodes.length > 1 && (
+            <div className="map-tabs">
+              {episodes.map((e, i) => (
+                <button key={i} className={i === epIdx ? 'on' : ''} disabled={!e.open} onClick={() => onEpisode(i)}>
+                  {e.open ? e.title : '🔒'}
+                </button>
+              ))}
+            </div>
+          )}
           <span className="map-ep-no">{episode.title}</span>
           <span className="map-ep-name">{episode.subtitle}</span>
         </div>
         <div className="map-actions">
           <span className="map-sp">SP <b>{progress.sp}</b></span>
           <button className={progress.sp > 0 ? 'has-sp' : ''} onClick={onTree}>🌳 スキル</button>
-          <button disabled={!cleared} onClick={onFree} title={cleared ? '勝つたびに強くなる敵と戦い続ける' : '第1話をクリアすると開く'}>
-            ⚔ 修練場{cleared ? `（ステージ${Math.max(progress.stage, 6)}）` : '🔒'}
+          <button disabled={!freeOpen} onClick={onFree} title={freeOpen ? '勝つたびに強くなる敵と戦い続ける' : '第1話をクリアすると開く'}>
+            ⚔ 修練場{freeOpen ? `（ステージ${Math.max(progress.stage, 6)}）` : '🔒'}
           </button>
         </div>
       </header>
@@ -114,7 +133,7 @@ export function Sugoroku({
               <span className="mn-no">{n.k === 'prologue' ? 'P' : n.k === 'next' ? '▶' : n.c.no}</span>
               {st === 'done' && <span className="mn-check">✔</span>}
               {boss && <span className="mn-boss">BOSS</span>}
-              <span className="mn-title">{n.k === 'prologue' ? 'プロローグ' : n.k === 'next' ? '第2話' : st === 'locked' ? '？？？' : n.c.title}</span>
+              <span className="mn-title">{n.k === 'prologue' ? 'プロローグ' : n.k === 'next' ? nextTitle : st === 'locked' ? '？？？' : n.c.title}</span>
               {i === here && <span className="mn-token" aria-label="いまいる場所" />}
             </button>
           );
@@ -125,8 +144,8 @@ export function Sugoroku({
         {selNode.k === 'prologue' && (
           <>
             <div className="mp-kicker">プロローグ</div>
-            <div className="mp-title">812年後の目覚め</div>
-            <p className="mp-desc">地下の休眠施設で、カプセルが壊れた。</p>
+            <div className="mp-title">{episode.prologueTitle ?? episode.subtitle}</div>
+            <p className="mp-desc">{episode.prologueDesc}</p>
             <button className="mp-go" onClick={onPrologue}>{selState === 'done' ? '📜 もう一度見る' : '▶ はじめる'}</button>
           </>
         )}
@@ -146,9 +165,19 @@ export function Sugoroku({
         )}
         {selNode.k === 'next' && (
           <>
-            <div className="mp-kicker">第2話</div>
-            <div className="mp-title">― 準備中 ―</div>
-            <p className="mp-desc">{cleared ? '地上の物語は、まだ書かれていない。それまでは修練場で腕をみがこう。' : '第1話をクリアすると、続きが見えてくる。'}</p>
+            <div className="mp-kicker">{nextTitle}</div>
+            {episodes[epIdx + 1] ? (
+              <>
+                <div className="mp-title">{selState === 'open' ? '― 次の話へ ―' : '？？？'}</div>
+                <p className="mp-desc">{selState === 'open' ? 'つづきの物語へ進む。' : `${episode.title}をクリアすると開く。`}</p>
+                {selState === 'open' && <button className="mp-go" onClick={() => onEpisode(epIdx + 1)}>▶ 次の話へ</button>}
+              </>
+            ) : (
+              <>
+                <div className="mp-title">― 準備中 ―</div>
+                <p className="mp-desc">{cleared ? 'この先の物語は、まだ書かれていない。それまでは修練場で腕をみがこう。' : `${episode.title}をクリアすると、続きが見えてくる。`}</p>
+              </>
+            )}
           </>
         )}
       </section>

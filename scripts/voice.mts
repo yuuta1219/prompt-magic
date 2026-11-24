@@ -13,7 +13,7 @@ import { VOICE_CAST, speakable, voiceKey } from '../src/story/voiceKey.ts';
 const ROOT = new URL('..', import.meta.url).pathname;
 const OUT = join(ROOT, 'public/voice');
 const URL_BASE = process.env.VOICEVOX_URL ?? 'http://127.0.0.1:50021';
-const SCRIPTS = ['src/story/ep1.txt'];
+const SCRIPTS = ['src/story/ep1.txt', 'src/story/ep2.txt'];
 
 mkdirSync(OUT, { recursive: true });
 const want = new Map<string, { who: string; text: string }>();

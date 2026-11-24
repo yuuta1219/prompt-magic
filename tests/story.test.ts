@@ -56,3 +56,17 @@ describe('台本テキストの読み取り', () => {
     ]);
   });
 });
+
+describe('第2話', () => {
+  const ep2 = EPISODES[1];
+  it('プロローグと5チャプター。強さはステージ6〜10（チャプター5は強敵）', () => {
+    expect(ep2.prologue.pages.length).toBeGreaterThan(0);
+    expect(ep2.chapters.map((c) => c.stage)).toEqual([6, 7, 8, 9, 10]);
+    expect(ep2.chapters[4].enemy).toBe('電波塔術式体トウキョウ');
+  });
+  it('第1話をクリアするまで第2話は開かない', async () => {
+    const { episodeOpen } = await import('../src/story');
+    expect(episodeOpen(1, [])).toBe(false);
+    expect(episodeOpen(1, EPISODES[0].chapters.map((c) => c.id))).toBe(true);
+  });
+});

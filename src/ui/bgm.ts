@@ -12,7 +12,19 @@
  */
 import { soundOn } from './sound';
 
-export type BgmName = 'main' | 'underground' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending';
+export type BgmName = 'main' | 'underground' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending' | `ep2-${'field' | 'village' | 'night' | 'tension' | 'battle-1' | 'battle-2' | 'boss' | 'ending'}`;
+
+/** 曲のファイルがまだ無いときに、代わりに流す曲（第2話の曲ができるまでは第1話の曲） */
+const FALLBACK: Partial<Record<BgmName, BgmName>> = {
+  'ep2-field': 'underground',
+  'ep2-village': 'underground',
+  'ep2-night': 'underground',
+  'ep2-tension': 'tension',
+  'ep2-battle-1': 'battle-1',
+  'ep2-battle-2': 'battle-2',
+  'ep2-boss': 'boss',
+  'ep2-ending': 'ending',
+};
 
 const BASE = '../bgm/';
 const VOLUME = 0.35;
@@ -40,7 +52,7 @@ const all = new Set<HTMLAudioElement>();
 let cur: { name: BgmName; el: HTMLAudioElement } | null = null;
 
 /** 同じ曲の別バージョン。切り替えるとき、前の曲が流れていた位置から続ける（前半を1分聞いていたら、後半も1分のところから） */
-const SAME_SONG: BgmName[][] = [['battle-1', 'battle-2']];
+const SAME_SONG: BgmName[][] = [['battle-1', 'battle-2'], ['ep2-battle-1', 'ep2-battle-2']];
 const sameSong = (a: BgmName, b: BgmName) => SAME_SONG.some((g) => g.includes(a) && g.includes(b));
 
 function retire(el: HTMLAudioElement, withFade: boolean) {
@@ -81,6 +93,8 @@ export function playBgm(name: BgmName | null): void {
   const el = new Audio(`${BASE}${name}.mp3`);
   el.loop = true;
   el.volume = 0;
+  const fb = FALLBACK[name];
+  if (fb) el.addEventListener('error', () => (el.src = `${BASE}${fb}.mp3`) && start(el), { once: true });
   if (old && sameSong(old.name, name)) {
     const t = old.el.currentTime;
     // 曲の長さが分かってから位置を合わせる（後半のほうが短ければ、頭に戻る）

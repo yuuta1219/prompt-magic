@@ -11,7 +11,7 @@ import { Sugoroku } from './Sugoroku';
 import { SkillTree } from './SkillTree';
 import { Kamishibai } from '../story/Kamishibai';
 import { playBgm, type BgmName } from './bgm';
-import { EPISODES, chapterAfter, chapterBefore } from '../story';
+import { EPISODES, chapterAfter, chapterBefore, episodeCleared, episodeOpen } from '../story';
 import type { Chapter, StoryScene } from '../story/types';
 import { applyDevGrant, loadProgress, markStorySeen, newProgress, saveProgress, unlockSkill, type Progress } from '../game/progress';
 
@@ -31,7 +31,13 @@ export function Game() {
     setProgressState(p);
     saveProgress(p);
   };
-  const ep = EPISODES[0];
+  // いま見ている話（はじめは、まだクリアしていない最初の話）
+  const [epIdx, setEpIdx] = useState(() => {
+    const done = progressRef.current.story;
+    const i = EPISODES.findIndex((e, k) => episodeOpen(k, done) && !episodeCleared(e, done));
+    return i === -1 ? EPISODES.length - 1 : i;
+  });
+  const ep = EPISODES[epIdx];
   const battleId = useRef(0);
   const [treeOpen, setTreeOpen] = useState(false);
 
@@ -46,10 +52,10 @@ export function Game() {
       },
     });
   const [screen, setScreen] = useState<Screen>(() => ({ k: 'map' }));
-  // はじめて開いたときは、マップより先にプロローグ
+  // はじめて開いたとき・はじめての話に来たときは、マップより先にプロローグ
   useEffect(() => {
     if (!progressRef.current.story.includes(ep.prologue.id)) playPrologue();
-  }, [progress.story.length === 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [progress.story.length === 0, epIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const startChapter = (c: Chapter) =>
     setScreen({
@@ -92,6 +98,7 @@ export function Game() {
   return (
     <>
       <Sugoroku
+        key={ep.id}
         episode={ep}
         progress={progress}
         focus={screen.focus}
@@ -99,6 +106,12 @@ export function Game() {
         onChapter={startChapter}
         onFree={startFree}
         onTree={() => setTreeOpen(true)}
+        episodes={EPISODES.map((e, i) => ({ title: e.title, open: episodeOpen(i, progress.story) }))}
+        epIdx={epIdx}
+        onEpisode={(i) => {
+          setEpIdx(i);
+          setScreen({ k: 'map' });
+        }}
       />
       {treeOpen && (
         <SkillTree
