@@ -17,6 +17,7 @@ export type BgmName = string;
 
 /** 曲のファイルがまだ無いときに、代わりに流す曲（第2話の曲ができるまでは第1話の曲） */
 const FALLBACK: Record<string, BgmName> = {
+  credits: 'ending',
   'ep2-main': 'ep2-field',
   'ep2-field': 'underground',
   'ep2-village': 'underground',

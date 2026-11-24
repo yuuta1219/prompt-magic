@@ -11,6 +11,7 @@ import { Sugoroku } from './Sugoroku';
 import { EpisodeSelect } from './EpisodeSelect';
 import { SkillTree } from './SkillTree';
 import { Kamishibai } from '../story/Kamishibai';
+import { EndRoll } from '../story/EndRoll';
 import { playBgm, type BgmName } from './bgm';
 import { EPISODES, chapterAfter, chapterBefore, episodeCleared, episodeOpen } from '../story';
 import type { Chapter, StoryScene } from '../story/types';
@@ -23,6 +24,7 @@ type Screen =
   | { k: 'episodes' }
   | { k: 'map'; focus?: string }
   | { k: 'story'; scene: StoryScene; then: () => void }
+  | { k: 'endroll' }
   | { k: 'battle'; spec: BattleSpec; chapter?: Chapter; id: number };
 
 export function Game() {
@@ -82,8 +84,11 @@ export function Game() {
     const idx = ep.chapters.indexOf(c);
     const next = ep.chapters[idx + 1]?.id ?? 'ep-next';
     const after = chapterAfter(c);
-    if (after) setScreen({ k: 'story', scene: after, then: () => toMap(next) });
-    else toMap(next);
+    // 第一部の最後のチャプターのあとは、エンドロール
+    const last = c.id === EPISODES[EPISODES.length - 1].chapters.at(-1)?.id;
+    const then = () => (last ? setScreen({ k: 'endroll' }) : toMap(next));
+    if (after) setScreen({ k: 'story', scene: after, then });
+    else then();
   };
 
   // BGM: マップはメインテーマ、紙芝居はその場面の曲（戦闘中の曲は戦闘画面が決める）
@@ -92,6 +97,11 @@ export function Game() {
     else if (screen.k === 'map') playBgm((ep.mapBgm as BgmName | undefined) ?? 'main');
     else if (screen.k === 'story') playBgm((screen.scene.bgm as BgmName | undefined) ?? 'underground');
   }, [screen, ep]);
+
+  // 開発中だけ: コンソールから window.__endroll() でエンドロールを確かめられる
+  if (import.meta.env.DEV) Object.assign(window, { __endroll: () => setScreen({ k: 'endroll' }) });
+
+  if (screen.k === 'endroll') return <EndRoll onDone={() => setScreen({ k: 'episodes' })} />;
 
   if (screen.k === 'story') return <Kamishibai key={screen.scene.id} scene={screen.scene} onDone={screen.then} />;
 

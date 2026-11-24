@@ -1415,3 +1415,25 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .st-locked .ws-title { color: var(--muted); }
 .map-back { flex-shrink: 0; }
 @media (max-width: 760px) { .world-spot { width: 58px; } .ws-title { font-size: 0.68rem; } }
+
+/* ================================================ エンドロール */
+.endroll { position: fixed; inset: 0; z-index: 70; background: #000; display: grid; grid-template-columns: 1fr minmax(320px, 1.1fr) 1fr; overflow: hidden; cursor: pointer; animation: ks-in 1.5s ease-out; }
+.er-col { position: relative; overflow: hidden; }
+.er-col::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #000, transparent 18%, transparent 82%, #000); pointer-events: none; }
+.er-strip { display: flex; flex-direction: column; gap: 28px; padding: 0 28px; }
+.er-strip img { width: 100%; border-radius: 10px; opacity: 0.75; box-shadow: 0 0 30px rgba(120, 90, 255, 0.25); }
+.er-col.left .er-strip { animation: er-up var(--dur) linear forwards; }
+.er-col.right .er-strip { animation: er-down var(--dur) linear forwards; }
+@keyframes er-up { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+@keyframes er-down { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+.er-center { position: relative; overflow: hidden; }
+.er-scroll { position: absolute; left: 0; right: 0; top: 100%; text-align: center; animation: er-roll var(--dur) linear forwards; }
+@keyframes er-roll { from { transform: translateY(0); } to { transform: translateY(calc(-100% - 100vh)); } }
+.er-block { margin: 0 0 9vh; }
+.er-head { font-family: 'Cinzel', 'Noto Sans JP', serif; color: var(--gold); letter-spacing: 0.25em; font-size: 0.95rem; margin-bottom: 10px; }
+.er-block:first-child .er-head { font-size: 2.2rem; letter-spacing: 0.2em; background: linear-gradient(90deg, #e3d6ff, #7fe8ff 60%, #ffe7a3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.er-line { color: #e8e2ff; font-size: 1.05rem; line-height: 2; }
+@media (max-width: 760px) { .endroll { grid-template-columns: 0.6fr 1.6fr 0.6fr; } .er-line { font-size: 0.85rem; } }
+@media (prefers-reduced-motion: reduce) { .er-strip { animation: none !important; } }
+.er-voice { margin-bottom: 14px; }
+.er-role { color: var(--muted); font-size: 0.8rem; }
