@@ -54,12 +54,13 @@ describe('ボスのギミック', () => {
     e.advance(50);
     const nox = e.s.attacks.find((a) => a.label === 'フィアト・ノクス')!;
     expect(nox.cells).toHaveLength(81);
-    expect(nox.cinematic).toBe('fiat_nox');
+    expect(nox.cinematic).toBe('fiat_nox_enemy');
+    expect(e.enemyAI.nextThinkAt).toBeGreaterThanOrEqual(e.s.time + 15000 - 100); // 着弾のあと10秒は何もしない
     e.s.attacks = [nox]; // ほかの攻撃は外して、ノクスだけ当てる
     e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
     e.advance(5100);
     expect(e.s.player.hp).toBe(30); // 70-50=20 になるところ、30 残る
-    expect(e.s.cinematics.some((c) => c.key === 'fiat_nox')).toBe(true);
+    expect(e.s.cinematics.some((c) => c.key === 'fiat_nox_enemy')).toBe(true);
     // 二度目は来ない
     e.enemyAI.nextThinkAt = 0;
     for (let i = 0; i < 100; i++) e.advance(50);

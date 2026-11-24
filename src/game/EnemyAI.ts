@@ -35,6 +35,8 @@ export const BOSS_MOVE_NAMES: Record<BossKind, string[]> = {
 export const NOX_CAST_MS = 5000;
 export const NOX_DAMAGE = 50;
 export const NOX_LEAVE_HP = 30;
+/** フィアト・ノクスのあと、ラスボスが何もしない時間 */
+export const NOX_REST_MS = 10_000;
 
 /** 負けイベントのオラクルが、最後の術式（必ず負ける）を唱える時刻 */
 export const ORACLE_FINAL_AT = 50_000;
@@ -125,7 +127,9 @@ export class EnemyAI {
     if (s.boss === 'oracle-final' && this.enraged && !this.noxUsed && !this.isCasting) {
       this.noxUsed = true;
       this.castFiatNox();
-      this.nextThinkAt = Math.max(this.nextThinkAt, s.time + NOX_CAST_MS + 1500);
+      // 撃ったあとは10秒、何もしてこない（立て直す時間）
+      this.nextThinkAt = Math.max(this.nextThinkAt, s.time + NOX_CAST_MS + NOX_REST_MS);
+      this.bossReadyAt = Math.max(this.bossReadyAt, s.time + NOX_CAST_MS + NOX_REST_MS);
       return;
     }
 
@@ -335,7 +339,7 @@ export class EnemyAI {
   private castFiatNox(): void {
     const s = this.s;
     const atk = s.addAttack('enemy', 'player', this.all(), NOX_DAMAGE, 'dark', NOX_CAST_MS, 'フィアト・ノクス');
-    atk.cinematic = 'fiat_nox';
+    atk.cinematic = 'fiat_nox_enemy';
     atk.leaveHp = NOX_LEAVE_HP;
     s.log('enemy', 'オラクルが「フィアト・ノクス」を唱えはじめた――あなたの、最後の魔法を');
     s.emit({ type: 'ENEMY_CAST_START', attack: atk });

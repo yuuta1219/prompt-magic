@@ -27,6 +27,8 @@ interface Theme {
 
 export const CINEMATIC_THEMES: Record<string, Theme> = {
   fiat_nox: { title: 'Fiat nox.', sub: '― 闇あれ ―', cls: 'cin-nox', layers: ['stars'], shake: 'none', impactMs: 4600, afterMs: 7000 },
+  // ラスボスが撃ち返すフィアト・ノクス。見た目は同じで、暗いままの時間だけ短い（3秒で明るくなる）
+  fiat_nox_enemy: { title: 'Fiat nox.', sub: '― 闇あれ ―', cls: 'cin-nox', layers: ['stars'], shake: 'none', impactMs: 4600, afterMs: 3000 },
   deep_requiem: { title: 'DEEP BLUE REQUIEM', sub: '深海の鎮魂歌', cls: 'cin-water', layers: ['wave', 'bubbles'], shake: 'none', impactMs: 3000, afterMs: 4500 },
   catastrophe: { title: 'HELLFIRE CATASTROPHE', sub: '獄炎の大災厄', cls: 'cin-fire', layers: ['flames', 'embers'], shake: 'heavy', impactMs: 2800, afterMs: 4500 },
   thor: { title: 'THOR JUDGMENT', sub: '雷神の裁き', cls: 'cin-thunder', layers: ['bolts'], shake: 'sharp', impactMs: 2600, afterMs: 3500 },
@@ -40,6 +42,11 @@ export const CINEMATIC_THEMES: Record<string, Theme> = {
   deus_ex_machina: { title: 'DEUS EX MACHINA', sub: '機械仕掛けの神', cls: 'cin-deus', layers: ['gears', 'motes'], shake: 'none', impactMs: 3000, afterMs: 4000 },
   veni_vidi_vici: { title: 'VENI VIDI VICI', sub: '来た、見た、勝った', cls: 'cin-veni', layers: ['motes'], shake: 'none', impactMs: 2600, afterMs: 3000 },
 };
+
+/** 演出の key から魔法名（敵が使う版 xxx_enemy は元の魔法の名前） */
+function spellName(key: string): string {
+  return ELEMENTS[key.replace(/_enemy$/, '') as SpellKey]?.name ?? '';
+}
 
 /** 詠唱中の呪文に大魔法が入っていれば、その魔法の key */
 export function chargingUltimate(entry: SpellEntry | undefined): string | null {
@@ -164,7 +171,7 @@ export function ImpactOverlay({ impact }: { impact: ImpactState }) {
       <div className="cin-text">
         <Title th={th} />
         <div className="cin-sub">{th.sub}</div>
-        <div className="cin-name">{ELEMENTS[impact.key as SpellKey]?.name}</div>
+        <div className="cin-name">{spellName(impact.key)}</div>
       </div>
     </div>
   );
@@ -188,7 +195,7 @@ export function AfterOverlay({ impact }: { impact: ImpactState }) {
 
 export function ChargeOverlay({ keyName, progress }: { keyName: string; progress: number }) {
   const th = CINEMATIC_THEMES[keyName];
-  const name = ELEMENTS[keyName as SpellKey]?.name ?? '';
+  const name = spellName(keyName);
   const shown = Math.max(1, Math.ceil(name.length * Math.min(1, progress * 1.15)));
   const tape = '⚠ 究極魔法 詠唱中 ⚠ ULTIMATE ⚠ '.repeat(8);
   return (
