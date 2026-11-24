@@ -32,7 +32,7 @@ export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?:
   声: { speaker: 13, name: '青山龍星', speed: 0.9, pitch: -0.08 },
   // 第3話（「ソラの文字」「ハルの文字」は筆談なので声なし）
   ソラ: { speaker: 12, name: '白上虎太郎', speed: 1.0 },
-  ハル: { speaker: 54, name: '春歌ナナ', speed: 0.95 },
+  ハル: { speaker: 58, name: '猫使ビィ', speed: 0.95 },
   母: { speaker: 109, name: '東北イタコ', speed: 1.0 },
   フィルター術式体: { speaker: 89, name: 'Voidoll', speed: 1.0 },
   フィルター術式体の残骸: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.04 },
