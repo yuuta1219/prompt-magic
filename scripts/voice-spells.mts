@@ -17,7 +17,7 @@ mkdirSync(OUT, { recursive: true });
 /** 魔法のほかに声をつけるコマンド */
 const COMMANDS: Record<string, string> = { guard: 'ガード', heal: 'ヒール' };
 const items: { key: string; text: string; ult: boolean }[] = [
-  ...SPELL_KEYS.map((k) => ({ key: k, text: ELEMENTS[k].name.replace(/・/g, ' '), ult: !!ELEMENTS[k].ultimate })),
+  ...SPELL_KEYS.map((k) => ({ key: k, text: ELEMENTS[k].name.replace(/・/g, ''), ult: !!ELEMENTS[k].ultimate })),
   ...Object.entries(COMMANDS).map(([key, text]) => ({ key, text, ult: false })),
 ];
 
