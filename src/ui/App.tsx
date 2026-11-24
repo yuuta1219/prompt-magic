@@ -223,7 +223,8 @@ export function App({
     const pos = `${s.player.pos.x},${s.player.pos.y}`;
     if (pos !== p.pos) playSfx('move', 0.35);
     if (!!s.player.shield && !p.shield) playSfx('guard', 0.45);
-    if (s.player.hp > p.hp + 0.5) playSfx('heal', 0.45);
+    // 自然回復（少しずつ増える）では鳴らさない。ヒールやドレインでまとめて回復したときだけ
+    if (s.player.hp >= p.hp + 3) playSfx('heal', 0.45);
     if (s.phase !== p.phase && s.phase === 'victory') playSfx('win', 0.55);
     if (s.phase !== p.phase && s.phase === 'defeat') playSfx('lose', 0.55);
     const imp = impact?.phase === 'impact';
