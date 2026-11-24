@@ -252,15 +252,20 @@ export function App({
   const lastEntry = [...s.spells].reverse().find((e) => e.status !== 'interpreting') ?? s.spells[s.spells.length - 1];
   const enemyCast = s.attacks.filter((a) => a.owner === 'enemy').sort((a, b) => a.resolveAt - b.resolveAt)[0];
   const casting = engine.casting;
-  const chargeKey = chargingUltimate(casting);
+  // 敵が大魔法（ラスボスのフィアト・ノクス）を唱えているときも、同じ詠唱演出を出す
+  const enemyUlt = s.attacks.find((a) => a.owner === 'enemy' && a.cinematic);
+  const chargeKey = chargingUltimate(casting) ?? enemyUlt?.cinematic ?? null;
+  const chargeProgress = enemyUlt && !chargingUltimate(casting)
+    ? Math.min(1, (s.time - enemyUlt.createdAt) / Math.max(1, enemyUlt.resolveAt - enemyUlt.createdAt))
+    : casting?.castStartAt !== undefined && casting.castEndAt !== undefined
+      ? Math.min(1, (s.time - casting.castStartAt) / Math.max(1, casting.castEndAt - casting.castStartAt))
+      : null;
 
   return (
     <div className={`app ${shakeClass(impact)}`}>
       {impact?.phase === 'impact' && <ImpactOverlay impact={impact} />}
       {impact?.phase === 'after' && <AfterOverlay impact={impact} />}
-      {impact?.phase !== 'impact' && chargeKey && casting?.castStartAt !== undefined && casting.castEndAt !== undefined && (
-        <ChargeOverlay keyName={chargeKey} progress={Math.min(1, (s.time - casting.castStartAt) / Math.max(1, casting.castEndAt - casting.castStartAt))} />
-      )}
+      {impact?.phase !== 'impact' && chargeKey && chargeProgress !== null && <ChargeOverlay keyName={chargeKey} progress={chargeProgress} />}
       {drawer && <div className="drawer-backdrop" onClick={() => setDrawer(null)} />}
       <div className={`drawer drawer-left ${drawer === 'guide' ? 'open' : ''}`} aria-hidden={drawer !== 'guide'}>
         <button className="drawer-close" onClick={() => setDrawer(null)}>✕ 閉じる</button>

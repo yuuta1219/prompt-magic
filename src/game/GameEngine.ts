@@ -374,6 +374,7 @@ export class GameEngine {
 
     // 大魔法は当たり外れに関係なく、着弾の瞬間に全画面演出
     if (a.owner === 'player' && a.element !== 'dark' && ELEMENTS[a.element].ultimate) s.cinematic(a.element);
+    else if (a.cinematic) s.cinematic(a.cinematic);
 
     if (!hit) {
       s.log(a.owner === 'player' ? 'magic' : 'enemy', a.owner === 'player' ? `${a.label}は外れた` : `敵の「${a.label}」を回避した`);
@@ -410,7 +411,8 @@ export class GameEngine {
     }
     const dmg = fx.halve ? Math.ceil(target.hp / 2) : Math.max(1, Math.round(a.damage * mult * (1 - reduction)));
     if (fx.halve) bonus.splice(0, bonus.length, 'HP半減');
-    target.hp = Math.max(0, target.hp - dmg);
+    // 倒しきらない攻撃（ラスボスのフィアト・ノクス）: 0 になりそうなら leaveHp だけ残す
+    target.hp = a.leaveHp !== undefined && target.hp - dmg < a.leaveHp ? Math.min(target.hp, a.leaveHp) : Math.max(0, target.hp - dmg);
     const shieldNote = reduction > 0 ? `（障壁で${Math.round(reduction * 100)}%軽減）` : '';
     if (a.owner === 'player') {
       const b = bonus.length ? `【${bonus.join('・')}】` : '';

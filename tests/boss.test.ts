@@ -45,6 +45,39 @@ describe('ボスのギミック', () => {
     expect(e.s.time).toBeGreaterThanOrEqual(50_000);
     expect(e.s.attacks.some((a) => a.label === '最終術式・全域消去' && a.damage >= 9999)).toBe(true);
   });
+  it('ラスボス: HP が半分を切ると一度だけフィアト・ノクス（50ダメージ、HP は30残す）', () => {
+    const e = new GameEngine(4, { stage: 35, boss: 'oracle-final' });
+    e.reset();
+    e.s.attacks = [];
+    e.s.enemy.hp = Math.floor(e.s.enemy.maxHp * 0.45);
+    e.s.player.hp = 70;
+    e.advance(50);
+    const nox = e.s.attacks.find((a) => a.label === 'フィアト・ノクス')!;
+    expect(nox.cells).toHaveLength(81);
+    expect(nox.cinematic).toBe('fiat_nox');
+    e.s.attacks = [nox]; // ほかの攻撃は外して、ノクスだけ当てる
+    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
+    e.advance(5100);
+    expect(e.s.player.hp).toBe(30); // 70-50=20 になるところ、30 残る
+    expect(e.s.cinematics.some((c) => c.key === 'fiat_nox')).toBe(true);
+    // 二度目は来ない
+    e.enemyAI.nextThinkAt = 0;
+    for (let i = 0; i < 100; i++) e.advance(50);
+    expect(e.s.attacks.some((a) => a.label === 'フィアト・ノクス')).toBe(false);
+  });
+  it('ラスボスのフィアト・ノクス: HP に余裕があれば、そのまま50ダメージ', () => {
+    const e = new GameEngine(4, { stage: 35, boss: 'oracle-final' });
+    e.reset();
+    e.s.attacks = [];
+    e.s.enemy.hp = Math.floor(e.s.enemy.maxHp * 0.45);
+    e.s.player.hp = e.s.player.maxHp = 200;
+    e.advance(50);
+    e.s.attacks = e.s.attacks.filter((a) => a.label === 'フィアト・ノクス');
+    e.enemyAI.nextThinkAt = Number.POSITIVE_INFINITY;
+    e.advance(5100);
+    expect(e.s.player.hp).toBeLessThanOrEqual(150);
+    expect(e.s.player.hp).toBeGreaterThanOrEqual(149);
+  });
   it('群れ: 1体倒すと次が出てきて、全部倒すまで勝ちにならない', () => {
     const e = new GameEngine(1, { stage: 6, units: 3 });
     e.reset();

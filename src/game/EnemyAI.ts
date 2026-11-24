@@ -31,6 +31,11 @@ export const BOSS_MOVE_NAMES: Record<BossKind, string[]> = {
   'oracle-final': ['三つ首の咆哮', '電波塔の影', '炎上', '発車ベル'],
 };
 
+/** ラスボスのフィアト・ノクス: 詠唱の長さ・ダメージ・最低限残す HP */
+export const NOX_CAST_MS = 5000;
+export const NOX_DAMAGE = 50;
+export const NOX_LEAVE_HP = 30;
+
 /** 負けイベントのオラクルが、最後の術式（必ず負ける）を唱える時刻 */
 export const ORACLE_FINAL_AT = 50_000;
 
@@ -68,6 +73,8 @@ export class EnemyAI {
   nextThinkAt = 1200;
   /** 負けイベントのオラクル: 何回目の同時詠唱か / 最後の術式を唱えたか */
   private volleys = 0;
+  /** ラスボスがフィアト・ノクスを使ったか */
+  noxUsed = false;
   private finalCast = false;
   /** ボスが次に大技を使えるようになる時刻 */
   bossReadyAt = 4000;
@@ -112,6 +119,14 @@ export class EnemyAI {
         s.log('enemy', `敵は予兆を察知して (${to.x},${to.y}) へ回避した`);
         this.plannedMove = this.planMove(to);
       }
+    }
+
+    // ラスボス: HP が半分を切ったら、一度だけフィアト・ノクス（やにかわの最終魔法）を撃ち返してくる
+    if (s.boss === 'oracle-final' && this.enraged && !this.noxUsed && !this.isCasting) {
+      this.noxUsed = true;
+      this.castFiatNox();
+      this.nextThinkAt = Math.max(this.nextThinkAt, s.time + NOX_CAST_MS + 1500);
+      return;
     }
 
     if (s.time < this.nextThinkAt) return;
@@ -314,6 +329,16 @@ export class EnemyAI {
     if (safe.length === 0) return;
     const reactAt = s.time + (atk.resolveAt - s.time) * (0.3 + s.rng.next() * 0.4);
     this.dodgePlan = { at: reactAt, to: s.rng.pick(safe) };
+  }
+
+  /** ラスボスのフィアト・ノクス。盤面すべて・50ダメージ。ただし HP は 30 残す（演出はやにかわのものと同じ） */
+  private castFiatNox(): void {
+    const s = this.s;
+    const atk = s.addAttack('enemy', 'player', this.all(), NOX_DAMAGE, 'dark', NOX_CAST_MS, 'フィアト・ノクス');
+    atk.cinematic = 'fiat_nox';
+    atk.leaveHp = NOX_LEAVE_HP;
+    s.log('enemy', 'オラクルが「フィアト・ノクス」を唱えはじめた――あなたの、最後の魔法を');
+    s.emit({ type: 'ENEMY_CAST_START', attack: atk });
   }
 
   /** 詠唱を乱された（魔力破壊の代わり）: 次の行動と大技を ms だけ遅らせる */

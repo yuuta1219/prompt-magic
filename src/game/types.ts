@@ -43,6 +43,10 @@ export interface PendingAttack {
   createdAt: number;
   resolveAt: number;
   label: string;
+  /** 大魔法の全画面演出（CINEMATIC_THEMES の key）。敵が使うときも同じ演出を出す */
+  cinematic?: string;
+  /** 当たっても、HP をこれ以下には減らさない（ラスボスのフィアト・ノクスは HP30 を残す） */
+  leaveHp?: number;
 }
 
 /** 着弾エフェクト（表示用、一定時間で消える） */
