@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { VOICE_CAST } from './voiceKey';
-import { bgmNow, playBgm } from '../ui/bgm';
+import { bgmNow, playBgm, stopAllBgm } from '../ui/bgm';
 import { playSfx } from '../ui/sound';
 
 const IMG_BASE = '../story/';
@@ -77,6 +77,8 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
   doneRef.current = onDone;
 
   useEffect(() => {
+    // 前の場面の曲が残らないように、いったん全部止めてからエンディング曲
+    stopAllBgm();
     playBgm('credits');
     // 曲の長さに合わせて流す（読めなければ2分）
     const a = new Audio('../bgm/credits.mp3');

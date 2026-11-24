@@ -63,7 +63,12 @@ function fade(a: HTMLAudioElement, to: number, ms: number, done?: () => void) {
 }
 
 /** 作った BGM の要素ぜんぶ（止め忘れを防ぐため、いま流すべき1曲以外は必ず止める） */
-const all = new Set<HTMLAudioElement>();
+// 画面をまたいでも、開発中にこのファイルが読み直されても、作った曲を全部たどれるように window に置く
+// （読み直しのたびに Set を作り直すと、前の曲が止められずに重なって鳴りつづける）
+const all: Set<HTMLAudioElement> =
+  typeof window !== 'undefined'
+    ? ((window as unknown as { __pmBgmAll?: Set<HTMLAudioElement> }).__pmBgmAll ??= new Set<HTMLAudioElement>())
+    : new Set<HTMLAudioElement>();
 let cur: { name: BgmName; el: HTMLAudioElement } | null = null;
 
 /** 同じ曲の別バージョン。切り替えるとき、前の曲が流れていた位置から続ける（前半を1分聞いていたら、後半も1分のところから） */
@@ -100,6 +105,12 @@ function start(el: HTMLAudioElement) {
       fade(el, VOLUME, FADE_MS);
     })
     .catch(() => {});
+}
+
+/** 鳴っている曲を、フェードせずにすぐ全部止める（エンドロールに入るときなど） */
+export function stopAllBgm(): void {
+  for (const el of [...all]) retire(el, false);
+  cur = null;
 }
 
 /** 流す曲を決める（同じ曲なら続きから流しっぱなし）。null で止める */
