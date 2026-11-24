@@ -55,7 +55,7 @@ export function Landing() {
       </section>
 
       <section className="lp-shot">
-        <img src="lp/screen.png" alt="戦闘画面。左に魔法陣と体力、まんなかに3Dの盤面、唱えた呪文「メテオ」が大きく出ている" loading="lazy" />
+        <img src="lp/screen.png" alt="戦闘画面。左に魔法陣と体力、まんなかに3Dの盤面。やにかわが唱えた「サンダー」の稲妻が、門番ケルベロスの盤面に落ちている" loading="lazy" />
       </section>
 
       <section className="lp-sec lp-story">
@@ -70,7 +70,6 @@ export function Landing() {
           </p>
         </div>
         <img className="lp-story-wide" src="story/ep1/07-surface.jpg" alt="折れた東京タワーと巨大な水晶、宙に浮かぶ岩が広がる、異世界のような未来の東京" loading="lazy" />
-        <p className="lp-sub">紙芝居でストーリーを読み、すごろくのマップでチャプターを進めながら戦う。</p>
       </section>
 
       <section className="lp-sec">
