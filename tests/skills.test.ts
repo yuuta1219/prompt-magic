@@ -117,19 +117,15 @@ describe('スキルツリー - 戦闘への反映', () => {
     expect(e.s.mana.regenPerSec).toBe(11);
   });
 
-  it('ステージが上がると敵が強くなる', () => {
-    // 1〜4戦目は同じ強さ
-    expect(stageStats(1)).toEqual({ enemyHp: 120, enemyPower: 1, thinkMs: 2400, elite: false, tier: 0 });
-    expect(stageStats(4)).toEqual(stageStats(1));
-    // 5戦ごとに強敵（少し強め）
-    expect(stageStats(5)).toMatchObject({ elite: true, enemyHp: 156, enemyPower: 1.15 });
-    expect(stageStats(6)).toEqual(stageStats(1));
-    // 10戦ごとに一律で強くなる
-    expect(stageStats(11)).toMatchObject({ tier: 1, enemyHp: 180, enemyPower: 1.25, thinkMs: 2250, elite: false });
-    expect(stageStats(20)).toMatchObject({ tier: 1, elite: true });
-    expect(stageStats(21)).toMatchObject({ tier: 2, enemyHp: 240 });
-    expect(stageStats(50).thinkMs).toBe(1600); // 段階4・強敵
-    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(120);
+  it('ステージが上がると敵が少しずつ強くなり、5の倍数は強敵', () => {
+    expect(stageStats(1)).toEqual({ enemyHp: 120, enemyPower: 1.25, thinkMs: 2400, elite: false, tier: 0 });
+    // 1ステージごとに HP+9.5%・攻撃+0.04・考える時間-25ms
+    expect(stageStats(2)).toMatchObject({ enemyHp: 131, enemyPower: 1.29, thinkMs: 2375 });
+    // 5の倍数は強敵（HP×1.12・攻撃×1.06・さらに速い）
+    expect(stageStats(5)).toMatchObject({ elite: true, enemyHp: 185, enemyPower: 1.49, thinkMs: 2100 });
+    expect(stageStats(6).enemyHp).toBeGreaterThan(stageStats(4).enemyHp);
+    expect(stageStats(100).thinkMs).toBe(1200); // いちばん速くても 1.2秒
+    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(143);
   });
 });
 

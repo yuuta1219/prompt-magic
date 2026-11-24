@@ -271,7 +271,7 @@ export const STAGE = {
 
 /** ステージ stage で勝ったときにもらえる SP（先に進むほど多い） */
 export function spForWin(stage: number): number {
-  return 4 + Math.floor(Math.max(1, stage) / 2);
+  return 3 + Math.floor(Math.max(1, stage) / 3);
 }
 
 export interface StageStats {
@@ -291,29 +291,36 @@ export interface StageStats {
  * - 10戦ごとに一律で強くなる（1〜10 / 11〜20 / 21〜30 …で段階が上がる。段階の中では伸びない）
  * - 5戦ごと（5, 10, 15 …）は「強敵」で少し強め
  */
+/**
+ * 敵の強さの決め方。ステージが1つ進むごとに少しずつ強くなり、5の倍数は強敵。
+ * 数字は tests/balance（BALANCE=20 npx vitest run tests/balance）のボット対戦で決めた：
+ * 「ふつう」のボットが勝率7〜9割・残りHP4割前後、「うまい」ボットはほぼ必ず勝って残りHP8割以上。
+ */
 export const STAGE_RULES = {
   BASE_HP: 120,
+  BASE_POWER: 1.25,
   BASE_THINK_MS: 2400,
-  /** 10戦ごとの上がり幅 */
-  TIER_HP: 0.5,
-  TIER_POWER: 0.25,
-  TIER_THINK_MS: 150,
+  /** 1ステージごとの上がり幅（HP は割合、攻撃は倍率に足す、考える時間は ms 減る） */
+  HP_PER_STAGE: 0.095,
+  POWER_PER_STAGE: 0.04,
+  THINK_PER_STAGE: 25,
   /** 強敵の倍率 */
-  ELITE_HP: 1.3,
-  ELITE_POWER: 1.15,
+  ELITE_HP: 1.12,
+  ELITE_POWER: 1.06,
   ELITE_THINK_MS: 200,
-  MIN_THINK_MS: 1400,
-} as const;
+  MIN_THINK_MS: 1200,
+};
 
 export function stageStats(stage: number): StageStats {
   const st = Math.max(1, Math.floor(stage));
   const tier = Math.floor((st - 1) / 10);
   const elite = st % 5 === 0;
   const R = STAGE_RULES;
+  const k = st - 1;
   return {
-    enemyHp: Math.round(R.BASE_HP * (1 + R.TIER_HP * tier) * (elite ? R.ELITE_HP : 1)),
-    enemyPower: Math.round((1 + R.TIER_POWER * tier) * (elite ? R.ELITE_POWER : 1) * 100) / 100,
-    thinkMs: Math.max(R.MIN_THINK_MS, R.BASE_THINK_MS - R.TIER_THINK_MS * tier - (elite ? R.ELITE_THINK_MS : 0)),
+    enemyHp: Math.round(R.BASE_HP * (1 + R.HP_PER_STAGE * k) * (elite ? R.ELITE_HP : 1)),
+    enemyPower: Math.round((R.BASE_POWER + R.POWER_PER_STAGE * k) * (elite ? R.ELITE_POWER : 1) * 100) / 100,
+    thinkMs: Math.max(R.MIN_THINK_MS, R.BASE_THINK_MS - R.THINK_PER_STAGE * k - (elite ? R.ELITE_THINK_MS : 0)),
     elite,
     tier,
   };
