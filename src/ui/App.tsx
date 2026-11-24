@@ -11,6 +11,8 @@ import { ELEMENTS, type SpellKey } from '../game/elements';
 import { computeLoadout, spForWin, STAGE } from '../game/skills';
 import { useSpeech } from './useSpeech';
 import { CastBanner, ChantPanel, type ChantFx } from './Chant';
+import { playSfx, saySpells, setSoundOn, soundOn, type Sfx } from './sound';
+import { vfxKind } from './Vfx';
 import { CostPanel, InterpretationPanel, LogPanel, QueuePanel, Section } from './Panels';
 
 
@@ -130,6 +132,11 @@ export function App({
     const locked = lockedParts(spell, engine.s.loadout);
     const reason = !r.ok ? r.error : !recognized ? '呪文として読めなかった' : locked.length ? `まだ覚えていない: ${locked.join('・')}` : null;
     setChantFx(reason === null ? { id, text: t, ok: true, color: castColor(actions) } : { id, text: t, ok: false, reason });
+    // 発動の音と、やにかわが魔法名を叫ぶ声
+    if (reason === null) {
+      playSfx('cast', 0.45);
+      saySpells(actions.flatMap((a) => (a.type === 'ATTACK' ? [a.element] : a.type === 'DEFEND' ? ['guard'] : a.type === 'HEAL' ? ['heal'] : [])));
+    } else playSfx('fizzle', 0.4);
     setTimeout(() => setChantFx((x) => (x?.id === id ? null : x)), 1900);
     if (!r.ok) {
       flash(r.error);
@@ -192,6 +199,39 @@ export function App({
   });
   const enemyName = battle.enemy;
 
+  // ---- 戦闘中の効果音（毎フレーム、前の状態と比べて変わったところで鳴らす）
+  const [sound, setSound] = useState(soundOn);
+  const seenFx = useRef(new Set<number>());
+  const seenAtk = useRef(new Set<number>());
+  const prev = useRef({ pos: `${s.player.pos.x},${s.player.pos.y}`, hp: s.player.hp, shield: !!s.player.shield, phase: s.phase, impact: false });
+  useEffect(() => {
+    const p = prev.current;
+    for (const f of s.fx) {
+      if (seenFx.current.has(f.id)) continue;
+      seenFx.current.add(f.id);
+      playSfx(`hit-${vfxKind(f.element)}` as Sfx, 0.5);
+      if (f.field === 'player' && f.hit) playSfx('hurt', 0.6);
+    }
+    for (const a of s.attacks) {
+      if (a.owner !== 'enemy' || seenAtk.current.has(a.id)) continue;
+      seenAtk.current.add(a.id);
+      playSfx('warn', 0.3);
+    }
+    const pos = `${s.player.pos.x},${s.player.pos.y}`;
+    if (pos !== p.pos) playSfx('move', 0.35);
+    if (!!s.player.shield && !p.shield) playSfx('guard', 0.45);
+    if (s.player.hp > p.hp + 0.5) playSfx('heal', 0.45);
+    if (s.phase !== p.phase && s.phase === 'victory') playSfx('win', 0.55);
+    if (s.phase !== p.phase && s.phase === 'defeat') playSfx('lose', 0.55);
+    const imp = impact?.phase === 'impact';
+    if (imp && !p.impact) playSfx('ultimate', 0.7);
+    prev.current = { pos, hp: s.player.hp, shield: !!s.player.shield, phase: s.phase, impact: imp };
+  });
+  // 話しはじめたら、魔法陣に魔力がたまる音
+  useEffect(() => {
+    if (speech.interim) playSfx('chant', 0.25);
+  }, [!!speech.interim]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const lastEntry = [...s.spells].reverse().find((e) => e.status !== 'interpreting') ?? s.spells[s.spells.length - 1];
   const enemyCast = s.attacks.filter((a) => a.owner === 'enemy').sort((a, b) => a.resolveAt - b.resolveAt)[0];
   const casting = engine.casting;
@@ -241,6 +281,15 @@ export function App({
             </select>
           </label>
           <button onClick={() => { if (s.phase !== 'battle' || confirm('戦闘をやめてマップに戻る？')) onLeave(false); }}>🗺 マップ</button>
+          <button
+            onClick={() => {
+              setSoundOn(!sound);
+              setSound(!sound);
+            }}
+            title="効果音と声の ON / OFF"
+          >
+            {sound ? '🔊' : '🔇'}
+          </button>
           <button className={drawer === 'guide' ? 'on' : ''} onClick={() => setDrawer((d) => (d === 'guide' ? null : 'guide'))}>📖 呪文の書</button>
           <button onClick={() => setPaused((p) => !p)}>{paused ? '▶ 再開' : '⏸ 一時停止'}</button>
           <button onClick={restart}>↻ 再戦</button>
