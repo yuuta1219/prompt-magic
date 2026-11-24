@@ -17,15 +17,15 @@ export function voiceKey(who: string, text: string): string {
 export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?: number; pitch?: number; intonation?: number }> = {
   やにかわ: { speaker: 116, name: 'あんこもん（けだるげ）', speed: 1.1 },
   管理術式オラクル: { speaker: 53, name: '麒ヶ島宗麟', speed: 1.05 },
-  ナレーション: { speaker: 14, name: '冥鳴ひまり', speed: 1.1 },
+  ナレーション: { speaker: 29, name: 'No.7', speed: 1.1 },
   機械音: { speaker: 89, name: 'Voidoll', speed: 1.1 },
   記録: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 1.05 },
   自販機型術式体: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.06 },
   門番術式体ケルベロス: { speaker: 21, name: '剣崎雌雄', speed: 0.95, pitch: -0.06 },
   // 第2話
-  少女: { speaker: 29, name: 'No.7', speed: 1.05 }, // 名乗る前のノワール（しっかりした凛々しい声）
-  ノワール: { speaker: 29, name: 'No.7', speed: 1.05 },
-  ミナト: { speaker: 29, name: 'No.7', speed: 1.0 },
+  少女: { speaker: 14, name: '冥鳴ひまり', speed: 1.05 }, // 名乗る前のノワール
+  ノワール: { speaker: 14, name: '冥鳴ひまり', speed: 1.05 },
+  ミナト: { speaker: 14, name: '冥鳴ひまり', speed: 1.0 },
   長老: { speaker: 42, name: 'ちび式じい', speed: 1.0 },
   村人: { speaker: 11, name: '玄野武宏', speed: 1.1 },
   電波塔術式体トウキョウ: { speaker: 13, name: '青山龍星', speed: 0.95, pitch: -0.05 },
