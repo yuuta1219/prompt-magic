@@ -27,7 +27,8 @@ const FALLBACK: Partial<Record<BgmName, BgmName>> = {
 };
 
 const BASE = '../bgm/';
-const VOLUME = 0.35;
+/** BGM の音量（本人の指定で、はじめの 0.35 の8割） */
+const VOLUME = 0.28;
 const FADE_MS = 1500;
 
 /** 音量を少しずつ変える。同じ要素に新しいフェードをかけたら、前のフェードは打ち切る */
