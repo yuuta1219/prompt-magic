@@ -17,7 +17,7 @@ export function voiceKey(who: string, text: string): string {
 export const VOICE_CAST: Record<string, { speaker: number; name: string; speed?: number; pitch?: number; intonation?: number }> = {
   やにかわ: { speaker: 116, name: 'あんこもん（けだるげ）', speed: 1.1 },
   管理術式オラクル: { speaker: 53, name: '麒ヶ島宗麟', speed: 1.05 },
-  ナレーション: { speaker: 31, name: 'No.7（読み聞かせ）', speed: 1.2 },
+  ナレーション: { speaker: 14, name: '冥鳴ひまり', speed: 1.1 },
   機械音: { speaker: 89, name: 'Voidoll', speed: 1.1 },
   記録: { speaker: 47, name: 'ナースロボ＿タイプＴ', speed: 1.05 },
   自販機型術式体: { speaker: 89, name: 'Voidoll', speed: 0.9, pitch: -0.06 },
