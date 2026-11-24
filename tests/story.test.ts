@@ -70,3 +70,16 @@ describe('第2話', () => {
     expect(episodeOpen(1, EPISODES[0].chapters.map((c) => c.id))).toBe(true);
   });
 });
+
+describe('台本の絵の指定', () => {
+  it('「絵:ep2/01-ruins / 色:dusk」のように / を含む絵の名前を読める', async () => {
+    const { parseScript } = await import('../src/story/script');
+    const sc = parseScript('## プロローグ\n--- ページ1（絵:ep2/01-ruins / 色:dusk / 演出:shake）\nやにかわ「テスト」\n--- ページ2（絵:07-surface）\nやにかわ「テスト」');
+    expect(sc.prologue[0]).toMatchObject({ img: 'ep2/01-ruins', tone: 'dusk', fx: 'shake' });
+    expect(sc.prologue[1].img).toBe('ep1/07-surface');
+  });
+  it('第2話の紙芝居の絵は全部 ep2/ か ep1/ の絵を指している', () => {
+    for (const p of [EPISODES[1].prologue.pages, ...EPISODES[1].chapters.flatMap((c) => [c.before, c.after])].flat())
+      if (p.img) expect(p.img).toMatch(/^ep[12]\/[0-9]{2}-[a-z-]+$/);
+  });
+});

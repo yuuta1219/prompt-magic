@@ -42,7 +42,8 @@ export function sfxFor(text: string): StoryLine['sfx'] {
 
 function parseMeta(meta: string): Omit<StoryPage, 'lines'> {
   const page: Omit<StoryPage, 'lines'> = {};
-  for (const part of meta.split('/').map((x) => x.trim())) {
+  // 区切りは「 / 」（前後に空白）。絵の名前の中の / （ep2/01-ruins など）では区切らない
+  for (const part of meta.split(/\s+\/\s+/).map((x) => x.trim())) {
     const [k, v] = part.split(':').map((x) => x?.trim());
     if (k === '絵' && v) page.img = v.includes('/') ? v : `ep1/${v}`;
     if (k === '色' && (TONES as readonly string[]).includes(v)) page.tone = v as StoryPage['tone'];
