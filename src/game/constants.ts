@@ -22,8 +22,8 @@ export const ENEMY = {
   CAST_MIN_MS: 3200,
   CAST_MAX_MS: 4200,
   /** プレイヤーの魔法の予兆を見て回避する基本確率（着弾まで1秒あたり） */
-  DODGE_CHANCE_PER_SEC: 0.35,
-  DODGE_CHANCE_MAX: 0.6,
+  DODGE_CHANCE_PER_SEC: 0.12, // 逃げすぎるので 1/3 に（もとは 0.35）
+  DODGE_CHANCE_MAX: 0.2, // 同じく 1/3（もとは 0.6）
   GUARD_REDUCTION: 0.4,
   GUARD_DURATION_MS: 2500,
 } as const;
