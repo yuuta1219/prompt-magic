@@ -311,7 +311,7 @@ export const STAGE_RULES = {
   MIN_THINK_MS: 2000,
 };
 
-/** 1-1 の敵の HP */
+/** 1-1〜1-4 の敵の HP */
 const FIRST_HP = 80;
 
 export function stageStats(stage: number): StageStats {
@@ -321,8 +321,8 @@ export function stageStats(stage: number): StageStats {
   const R = STAGE_RULES;
   const k = st - 1;
   return {
-    // 1-1（最初の戦闘）だけは、操作に慣れてもらうために HP 80
-    enemyHp: st === 1 ? FIRST_HP : Math.round(R.BASE_HP * (1 + R.HP_PER_STAGE * k) * (elite ? R.ELITE_HP : 1)),
+    // 1-1〜1-4 は、操作に慣れてもらうために HP 80
+    enemyHp: st <= 4 ? FIRST_HP : Math.round(R.BASE_HP * (1 + R.HP_PER_STAGE * k) * (elite ? R.ELITE_HP : 1)),
     enemyPower: Math.round((R.BASE_POWER + R.POWER_PER_STAGE * k) * (elite ? R.ELITE_POWER : 1) * 100) / 100,
     thinkMs: Math.max(R.MIN_THINK_MS, R.BASE_THINK_MS - R.THINK_PER_STAGE * k - (elite ? R.ELITE_THINK_MS : 0)),
     elite,

@@ -118,14 +118,14 @@ describe('スキルツリー - 戦闘への反映', () => {
   });
 
   it('ステージが上がると敵が少しずつ強くなり、5の倍数は強敵', () => {
-    expect(stageStats(1)).toEqual({ enemyHp: 80, enemyPower: 0.9, thinkMs: 3200, elite: false, tier: 0 }); // 1-1 だけ HP 80
+    expect(stageStats(1)).toEqual({ enemyHp: 80, enemyPower: 0.9, thinkMs: 3200, elite: false, tier: 0 }); // 1-1〜1-4 は HP 80
     // 1ステージごとに HP+8%・攻撃+0.012・行動の間隔-20ms
-    expect(stageStats(2)).toMatchObject({ enemyHp: 130, enemyPower: 0.91, thinkMs: 3180 });
+    expect(stageStats(2)).toMatchObject({ enemyHp: 80, enemyPower: 0.91, thinkMs: 3180 });
     // 5の倍数は強敵（HP×1.12・攻撃×1.06・さらに速い）
     expect(stageStats(5)).toMatchObject({ elite: true, enemyHp: 177, enemyPower: 1, thinkMs: 2920 });
     expect(stageStats(6).enemyHp).toBeGreaterThan(stageStats(4).enemyHp);
     expect(stageStats(100).thinkMs).toBe(2000); // いちばん速くても 2秒（毎回 ±30% ゆらぐ）
-    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(139);
+    expect(engineWith(INITIAL_UNLOCKED, 3).s.enemy.maxHp).toBe(80);
   });
 });
 
