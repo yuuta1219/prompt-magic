@@ -47,12 +47,19 @@ export function Game() {
   const battleId = useRef(0);
   const [treeOpen, setTreeOpen] = useState(false);
   // 話をはじめてクリアしたときの「ツイートしませんか？」（話ごとに1回だけ）
-  const [share, setShare] = useState<number | null>(null);
-  const offerShare = (i: number) => {
+  const [share, setShare] = useState<{ i: number; then?: () => void } | null>(null);
+  /** シェアのお誘いを出す（出したら true）。閉じたら then を続ける */
+  const offerShare = (i: number, then?: () => void): boolean => {
     const e = EPISODES[i];
-    if (!e || shareShown(e.id)) return;
+    if (!e || shareShown(e.id)) return false;
     markShareShown(e.id);
-    setShare(i);
+    setShare({ i, then });
+    return true;
+  };
+  /** 次の話へ（まだ見ていなければ、その話のプロローグから） */
+  const goEpisode = (i: number) => {
+    setEpIdx(i);
+    setScreen({ k: 'map' });
   };
 
   const toMap = (focus?: string) => setScreen({ k: 'map', focus });
@@ -96,13 +103,17 @@ export function Game() {
     const after = chapterAfter(c);
     // 第一部の最後のチャプターのあとは、エンドロール
     const last = c.id === EPISODES[EPISODES.length - 1].chapters.at(-1)?.id;
-    // その話の最後のチャプターなら、マップに戻ったところでシェアのお誘い（第7話はエンドロールのあと）
+    // その話の最後のチャプターなら、次の話へ（第7話はエンドロールのあと）
     const epEnd = idx === ep.chapters.length - 1;
     const i = epIdx;
     const then = () => {
       if (last) return setScreen({ k: 'endroll' });
-      toMap(next);
-      if (epEnd) offerShare(i);
+      if (!epEnd) return toMap(next);
+      // 話の最後のチャプターなら、次の話へそのまま進む（はじめてのクリアなら、先にシェアのお誘い）
+      const go = () => (EPISODES[i + 1] ? goEpisode(i + 1) : setScreen({ k: 'episodes' }));
+      // お誘いはマップの上に出す（紙芝居の画面には出ないので、いったんマップに戻す）
+      if (offerShare(i, go)) toMap(c.id);
+      else go();
     };
     if (after) setScreen({ k: 'story', scene: after, then });
     else then();
@@ -118,7 +129,7 @@ export function Game() {
   // 開発中だけ: コンソールから window.__endroll() でエンドロールを確かめられる
   if (import.meta.env.DEV) Object.assign(window, {
       __endroll: () => setScreen({ k: 'endroll' }),
-      __share: (i: number) => setShare(i),
+      __share: (i: number) => setShare({ i }),
       // window.__fight(6, 1) で第6話チャプター1の戦闘へ直接
       __fight: (ep: number, no: number) => {
         const c = EPISODES[ep - 1]?.chapters[no - 1];
@@ -145,7 +156,16 @@ export function Game() {
   if (screen.k === 'battle')
     return <App key={screen.id} progress={progress} setProgress={setProgress} battle={screen.spec} onLeave={leaveBattle} />;
 
-  const shareModal = share !== null && <ShareModal no={share + 1} subtitle={EPISODES[share].subtitle} onClose={() => setShare(null)} />;
+  const shareModal = share !== null && (
+    <ShareModal
+      no={share.i + 1}
+      subtitle={EPISODES[share.i].subtitle}
+      onClose={() => {
+        setShare(null);
+        share.then?.();
+      }}
+    />
+  );
   const freeOpen = episodeCleared(EPISODES[0], progress.story);
   const tree = treeOpen && (
     <SkillTree
