@@ -1380,3 +1380,8 @@ span.cmd-btn, span.guide-name { cursor: default; }
 .sprite-aura.shielded { background: radial-gradient(ellipse at 50% 60%, transparent 45%, rgba(120, 240, 255, 0.8) 60%, transparent 72%); }
 .sprite-aura.warded { box-shadow: inset 0 0 0 2px var(--gold); }
 .sprite-ice { position: absolute; left: 50%; bottom: 0; width: 160%; height: 130%; translate: -50% 0; border-radius: 30% 30% 20% 20%; pointer-events: none; background: linear-gradient(160deg, rgba(230, 250, 255, 0.65), rgba(127, 216, 255, 0.4) 50%, rgba(200, 240, 255, 0.6)); border: 2px solid rgba(230, 250, 255, 0.9); }
+/* 選んだマスの絵を盤の背景にうっすら */
+.map-bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.22; filter: saturate(0.85); pointer-events: none; animation: map-bg-in 0.6s ease-out; }
+.map-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(7, 5, 15, 0.75)); }
+@keyframes map-bg-in { from { opacity: 0; } to { opacity: 0.22; } }
+.map-board > .map-road, .map-board > .map-node { z-index: 1; }

@@ -71,6 +71,9 @@ export function Sugoroku({
 
   const selNode = nodes[sel];
   const selState = stateOf(selNode);
+  /** マスの絵（まだ開いていないマスは絵なし） */
+  const thumbOf = (n: NodeKind): string | undefined => (n.k === 'chapter' ? n.c.thumb : n.k === 'prologue' ? 'ep1/01-pod' : 'ep1/07-surface');
+  const selThumb = selState === 'locked' ? undefined : thumbOf(selNode);
 
   return (
     <div className="map">
@@ -90,13 +93,15 @@ export function Sugoroku({
       </header>
 
       <div className="map-board">
+        {/* 選んだマスの絵を、盤の背景にうっすら出す（選び直すたびにふわっと入れ替わる） */}
+        {selThumb && <div key={selThumb} className="map-bg" style={{ backgroundImage: `url(${IMG_BASE}${selThumb}.jpg)` }} aria-hidden />}
         <svg className="map-road" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
           <path d={road(POS.length - 1)} className="road-base" />
           {here > 0 && <path d={road(here)} className="road-lit" />}
         </svg>
         {nodes.map((n, i) => {
           const st = stateOf(n);
-          const thumb = n.k === 'chapter' ? n.c.thumb : n.k === 'prologue' ? 'ep1/01-pod' : 'ep1/07-surface';
+          const thumb = thumbOf(n);
           const boss = n.k === 'chapter' && stageStats(n.c.stage).elite;
           return (
             <button
