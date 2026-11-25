@@ -31,7 +31,7 @@ export const EPISODE7: Episode = {
   prologueThumb: 'ep7/01-stairs',
   prologueTitle: '光の階段',
   prologueDesc: '塔の頂に、オラクルが待っている。',
-  nextThumb: 'ep7/27-moon',
+  nextThumb: 'ep7/25-dawn-top',
   mapBgm: 'ep7-main',
   chapters: script.chapters.map((c) => ({
     id: `ep7-c${c.no}`,

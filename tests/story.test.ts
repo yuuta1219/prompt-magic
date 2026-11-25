@@ -115,10 +115,10 @@ describe('第4話〜第7話', () => {
   });
 });
 
-describe('エンドロールのあと', () => {
-  it('第7話の最後のチャプターは「第一部 完」で終わり、月の場面はエンドロールのあとに流れる', () => {
+describe('最後の話の終わり', () => {
+  it('第7話の最後のチャプターは「完」で終わり、エンドロールのあとの場面（続きへの引き）はない', () => {
     const c = EPISODES[6].chapters[4];
-    expect(c.after.at(-1)?.lines[0].text).toBe('第一部　完');
-    expect(c.postCredits?.[0].img).toBe('ep7/27-moon');
+    expect(c.after.at(-1)?.lines[0].text).toBe('完');
+    expect(c.postCredits ?? []).toHaveLength(0);
   });
 });

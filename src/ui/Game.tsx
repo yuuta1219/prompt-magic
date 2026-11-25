@@ -101,7 +101,7 @@ export function Game() {
     const idx = ep.chapters.indexOf(c);
     const next = ep.chapters[idx + 1]?.id ?? 'ep-next';
     const after = chapterAfter(c);
-    // 第一部の最後のチャプターのあとは、エンドロール
+    // 最後の話の、最後のチャプターのあとは、エンドロール
     const last = c.id === EPISODES[EPISODES.length - 1].chapters.at(-1)?.id;
     // その話の最後のチャプターなら、次の話へ（第7話はエンドロールのあと）
     const epEnd = idx === ep.chapters.length - 1;
@@ -138,18 +138,17 @@ export function Game() {
     });
 
   if (screen.k === 'endroll') {
-    // エンドロールのあとに、もう一場面（第二部への引き）
-    const post = EPISODES[EPISODES.length - 1].chapters.at(-1)?.postCredits;
-    const toEpisodes = () => {
-      setScreen({ k: 'episodes' });
-      offerShare(EPISODES.length - 1);
-    };
+    // エンドロールが終わったら、話を選ぶ画面へ（はじめて見たときはシェアのお誘い）
     return (
       <EndRoll
-        onDone={() => (post?.length ? setScreen({ k: 'story', scene: { id: 'post-credits', pages: post, bgm: 'ep7-tension' }, then: toEpisodes }) : toEpisodes())}
+        onDone={() => {
+          setScreen({ k: 'episodes' });
+          offerShare(EPISODES.length - 1);
+        }}
       />
     );
   }
+
 
   if (screen.k === 'story') return <Kamishibai key={screen.scene.id} scene={screen.scene} onDone={screen.then} />;
 
@@ -223,6 +222,7 @@ export function Game() {
           setScreen({ k: 'map' });
         }}
         onBack={() => setScreen({ k: 'episodes' })}
+        onEndroll={() => setScreen({ k: 'endroll' })}
       />
       {tree}
       {shareModal}

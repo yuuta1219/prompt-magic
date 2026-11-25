@@ -1,5 +1,5 @@
 /**
- * すごろくのマップ。プロローグ → チャプター1〜5 → 次の話（準備中）を、くねくねした道でつなぐ。
+ * すごろくのマップ。プロローグ → チャプター1〜5 → 次の話（最後の話はエンドロール）を、くねくねした道でつなぐ。
  * マスを押すと下にそのチャプターの説明が出て、「はじめる」で紙芝居 → 戦闘へ。
  */
 import { useState } from 'react';
@@ -35,6 +35,7 @@ export function Sugoroku({
   epIdx,
   onEpisode,
   onBack,
+  onEndroll,
 }: {
   episode: Episode;
   progress: Progress;
@@ -49,6 +50,8 @@ export function Sugoroku({
   onEpisode: (idx: number) => void;
   /** マップ（話を選ぶ画面）に戻る */
   onBack: () => void;
+  /** エンドロールを見る（最後の話の、最後のマス） */
+  onEndroll: () => void;
 }) {
   const done = progress.story;
   const cleared = episodeCleared(episode, done);
@@ -63,7 +66,8 @@ export function Sugoroku({
 
   const stateOf = (n: NodeKind): 'done' | 'open' | 'locked' => {
     if (n.k === 'prologue') return done.includes(episode.prologue.id) ? 'done' : 'open';
-    if (n.k === 'next') return cleared && episodes[epIdx + 1]?.open ? 'open' : 'locked';
+    // 最後の話の「次」はエンドロール。クリアしていれば、いつでも見られる
+    if (n.k === 'next') return cleared && (!episodes[epIdx + 1] || episodes[epIdx + 1].open) ? 'open' : 'locked';
     if (done.includes(n.c.id)) return 'done';
     return chapterOpen(episode, n.idx, done) ? 'open' : 'locked';
   };
@@ -79,7 +83,7 @@ export function Sugoroku({
       })
       .join(' ');
 
-  const nextTitle = episodes[epIdx + 1]?.title ?? '次の話';
+  const nextTitle = episodes[epIdx + 1]?.title ?? 'エンドロール';
   /** 修練場は第1話をクリアしたら開く（第2話以降を見ているなら、第1話はクリア済み） */
   const freeOpen = epIdx > 0 || cleared;
   const selNode = nodes[sel];
@@ -168,8 +172,9 @@ export function Sugoroku({
               </>
             ) : (
               <>
-                <div className="mp-title">― 準備中 ―</div>
-                <p className="mp-desc">{cleared ? 'この先の物語は、まだ書かれていない。それまでは修練場で腕をみがこう。' : `${episode.title}をクリアすると、続きが見えてくる。`}</p>
+                <div className="mp-title">{selState === 'open' ? '― エンドロール ―' : '？？？'}</div>
+                <p className="mp-desc">{selState === 'open' ? 'ここまでの旅を、もう一度ふり返る。' : `${episode.title}をクリアすると見られる。`}</p>
+                {selState === 'open' && <button className="mp-go" onClick={onEndroll}>▶ エンドロールを見る</button>}
               </>
             )}
           </>

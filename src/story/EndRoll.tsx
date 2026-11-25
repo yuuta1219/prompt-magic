@@ -7,7 +7,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { VOICE_CAST } from './voiceKey';
 import { bgmNow, playBgm, stopAllBgm } from '../ui/bgm';
-import { playSfx } from '../ui/sound';
 
 const IMG_BASE = '../story/';
 
@@ -61,7 +60,7 @@ function credits(): Block[] {
     { head: '監督', lines: ['Claude Code'] },
     { head: '総監督', lines: ['やにかわ'] },
     { lines: ['詠唱とは、世界への命令である。', 'そして、確認とは、その命令に責任を持つことである。'] },
-    { head: 'Thank you for playing', lines: ['――　第二部へ　――'] },
+    { head: 'Thank you for playing', lines: [] },
   ];
 }
 
@@ -93,19 +92,15 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
     a.addEventListener('loadedmetadata', () => a.duration && isFinite(a.duration) && setDur(Math.max(60, a.duration - 4)));
   }, []);
 
-  // 曲が終わったら、少し余韻 → 画面がジジジと乱れる → 月の場面へ
-  const [phase, setPhase] = useState<'roll' | 'after' | 'glitch'>('roll');
+  // 曲が終わったら、少し余韻を残して終わる
+  const [phase, setPhase] = useState<'roll' | 'after'>('roll');
   useEffect(() => {
     const t1 = setTimeout(() => {
       setPhase('after');
       playBgm(null);
     }, (dur + 4) * 1000);
-    const t2 = setTimeout(() => {
-      setPhase('glitch');
-      playSfx('glitch', 0.6);
-    }, (dur + 8) * 1000);
-    const t3 = setTimeout(() => doneRef.current(), (dur + 10.2) * 1000);
-    return () => [t1, t2, t3].forEach(clearTimeout);
+    const t2 = setTimeout(() => doneRef.current(), (dur + 9) * 1000);
+    return () => [t1, t2].forEach(clearTimeout);
   }, [dur]);
 
   // 絵は一枚ずつ、左右交互に、ゆっくりフェードしながら少しずつ寄っていく
@@ -160,14 +155,6 @@ export function EndRoll({ onDone }: { onDone: () => void }) {
           </div>
         )}
       </div>
-      {phase === 'glitch' && (
-        <div className="er-glitch" aria-hidden>
-          <div className="g-noise" />
-          <div className="g-bar b1" />
-          <div className="g-bar b2" />
-          <div className="g-bar b3" />
-        </div>
-      )}
       <button className="ks-skip" onClick={(e) => { e.stopPropagation(); onDone(); }}>スキップ ▶▶</button>
     </div>
   );
